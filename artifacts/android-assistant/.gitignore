@@ -1,0 +1,14 @@
+# Android / Gradle generated files — do NOT commit these
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+*.orig
+
+# Keep the Gradle wrapper JAR (needed to build without Gradle installed)
+!gradle/wrapper/gradle-wrapper.jar

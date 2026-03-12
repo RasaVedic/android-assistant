@@ -94,3 +94,16 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## Android Assistant App
+
+A standalone native Android app (Kotlin) located at `artifacts/android-assistant/`. This is NOT a pnpm workspace package — it is a self-contained Gradle project meant to be pushed to GitHub and built with Android Studio, Termux, or GitHub Actions.
+
+### Key files
+- `MainActivity.kt` — main screen, wires all modules together
+- `CommandParser.kt` — offline command understanding with Levenshtein auto-correct
+- `VoiceInputHandler.kt` — microphone / Android SpeechRecognizer integration
+- `ActionHandler.kt` — executes open app / call / alarm / search via Android Intents
+- `GeminiHelper.kt` — optional Gemini Flash API for online command interpretation
+- `.github/workflows/build-apk.yml` — GitHub Actions CI that builds the debug APK automatically
+- `GUIDE.md` — full beginner's guide: build instructions, testing, customization

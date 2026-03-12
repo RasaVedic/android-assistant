@@ -1,0 +1,13 @@
+# local.properties.example
+#
+# Copy this to local.properties and set your Android SDK path.
+# This file is NOT committed to git (local.properties is in .gitignore).
+#
+# On Linux/Mac:
+sdk.dir=/home/YOUR_USERNAME/Android/Sdk
+#
+# On Windows:
+# sdk.dir=C\:\\Users\\YOUR_USERNAME\\AppData\\Local\\Android\\Sdk
+#
+# In Termux:
+# sdk.dir=/data/data/com.termux/files/home/android-sdk
