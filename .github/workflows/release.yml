@@ -70,9 +70,12 @@ jobs:
 
       # ── 4. Build APK ───────────────────────────────────────────────────────
       - name: Restore Signing Keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > pkassist.jks
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > pkassist.jks
+          fi
 
       - name: Build Release APK
         run: |
@@ -118,7 +121,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add version.json
           git diff --staged --quiet || git commit -m "chore: update version.json for ${{ steps.version.outputs.TAG_NAME }}"
-          git push origin HEAD:main || true
+          git push origin HEAD:master || true
         working-directory: artifacts/android-assistant
 
       # ── 7. Create GitHub Release with APK attached ─────────────────────────
