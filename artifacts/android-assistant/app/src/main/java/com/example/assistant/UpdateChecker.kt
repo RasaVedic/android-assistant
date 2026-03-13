@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.pm.PackageInfoCompat
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -50,10 +51,10 @@ object UpdateChecker {
     /** Call on app start — shows dialog if update available */
     suspend fun checkAndPrompt(context: Context) {
         val remote = fetchRemoteVersion() ?: return
-        val local = context.packageManager
-            .getPackageInfo(context.packageName, 0).versionCode
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val local = PackageInfoCompat.getLongVersionCode(packageInfo)
 
-        if (remote.versionCode > local) {
+        if (remote.versionCode.toLong() > local) {
             withContext(Dispatchers.Main) {
                 showUpdateDialog(context, remote)
             }

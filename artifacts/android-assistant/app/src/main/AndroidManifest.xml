@@ -56,16 +56,33 @@
         android:usesCleartextTraffic="false"
         android:requestLegacyExternalStorage="true">
 
-        <!-- Main screen -->
+        <!-- Splash screen (entry point) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/Theme.AndroidAssistant.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Login screen -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
+        <!-- Forgot password screen -->
+        <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false"
+            android:parentActivityName=".LoginActivity" />
+
+        <!-- Main screen -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Settings screen -->
         <activity

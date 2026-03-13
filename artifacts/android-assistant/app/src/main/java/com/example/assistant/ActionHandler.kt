@@ -38,7 +38,7 @@ object ActionHandler {
             "screenshot"    -> { AssistantAccessibilityService.screenshot(); "Screenshot taken 📸" }
             "notifications" -> { AssistantAccessibilityService.showNotif(); "Opening notifications 🔔" }
             "lock"          -> { AssistantAccessibilityService.lockScreen(); "Screen locked 🔒" }
-            "power_menu"    -> { AssistantAccessibilityService.goBack();    "Power menu not supported on this device" }
+            "power_menu"    -> "Power menu is not supported on this device"
             else            -> "Unknown navigation action"
         }
     }
