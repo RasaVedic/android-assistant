@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Assistant</string>
+    <string name="app_name">PKassist</string>
     <string name="hint_command">Type a command…</string>
     <string name="btn_send">Send</string>
     <string name="offline_mode">Offline</string>
     <string name="online_mode">Online · Gemini</string>
     <string name="appbar_scrolling_view_behavior" translatable="false">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
+    <string name="accessibility_service_description">PKassist uses accessibility to perform actions on your behalf, like navigating apps and reading screen content.</string>
+    <string name="notification_channel_name">PKassist Service</string>
+    <string name="notification_channel_desc">Keeps PKassist running in the background</string>
+    <string name="notification_title">PKassist is active</string>
+    <string name="notification_text">Tap to open. Say a command anytime.</string>
 </resources>

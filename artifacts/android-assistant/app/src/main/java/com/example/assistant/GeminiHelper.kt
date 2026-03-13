@@ -48,6 +48,12 @@ class GeminiHelper(private val context: Context) {
             - CALL <name_or_number>
             - ALARM <time>
             - SEARCH <query>
+            - NAVIGATE back
+            - NAVIGATE home
+            - NAVIGATE recents
+            - NAVIGATE screenshot
+            - NAVIGATE notifications
+            - NAVIGATE lock
             - UNKNOWN
             
             Respond with just one line, nothing else.
@@ -82,11 +88,12 @@ class GeminiHelper(private val context: Context) {
         val upper = geminiOutput.trim().uppercase()
         val original = geminiOutput.trim()
         return when {
-            upper.startsWith("OPEN ")   -> ParsedCommand.OpenApp(original.substring(5).trim())
-            upper.startsWith("CALL ")   -> ParsedCommand.MakeCall(original.substring(5).trim())
-            upper.startsWith("ALARM ")  -> ParsedCommand.SetAlarm(original.substring(6).trim())
-            upper.startsWith("SEARCH ") -> ParsedCommand.Search(original.substring(7).trim())
-            else                        -> ParsedCommand.Unknown(geminiOutput, null)
+            upper.startsWith("OPEN ")     -> ParsedCommand.OpenApp(original.substring(5).trim())
+            upper.startsWith("CALL ")     -> ParsedCommand.MakeCall(original.substring(5).trim())
+            upper.startsWith("ALARM ")    -> ParsedCommand.SetAlarm(original.substring(6).trim())
+            upper.startsWith("SEARCH ")   -> ParsedCommand.Search(original.substring(7).trim())
+            upper.startsWith("NAVIGATE ") -> ParsedCommand.Navigate(original.substring(9).trim().lowercase())
+            else                          -> ParsedCommand.Unknown(geminiOutput, null)
         }
     }
 }

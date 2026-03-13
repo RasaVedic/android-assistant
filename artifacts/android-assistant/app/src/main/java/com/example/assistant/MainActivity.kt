@@ -93,6 +93,9 @@ class MainActivity : AppCompatActivity() {
 
         geminiHelper = GeminiHelper(this)
 
+        // Start background service so app keeps running
+        AssistantBackgroundService.start(this)
+
         // RecyclerView setup
         adapter = CommandAdapter(commandHistory)
         binding.rvHistory.layoutManager = LinearLayoutManager(this).apply {

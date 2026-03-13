@@ -19,7 +19,27 @@ object ActionHandler {
             is ParsedCommand.MakeCall -> makeCall(context, command.contact)
             is ParsedCommand.SetAlarm -> setAlarm(context, command.time)
             is ParsedCommand.Search   -> search(context, command.query)
+            is ParsedCommand.Navigate -> navigate(command.action)
             is ParsedCommand.Unknown  -> handleUnknown(command)
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Accessibility navigation (requires accessibility service enabled)
+    // -----------------------------------------------------------------------
+    private fun navigate(action: String): String {
+        if (!AssistantAccessibilityService.isEnabled()) {
+            return "Accessibility service is OFF.\nGo to Settings → Accessibility → PKassist → Enable it."
+        }
+        return when (action) {
+            "back"          -> { AssistantAccessibilityService.goBack();    "Going back ←" }
+            "home"          -> { AssistantAccessibilityService.goHome();    "Going to home screen 🏠" }
+            "recents"       -> { AssistantAccessibilityService.showRecent(); "Showing recent apps" }
+            "screenshot"    -> { AssistantAccessibilityService.screenshot(); "Screenshot taken 📸" }
+            "notifications" -> { AssistantAccessibilityService.showNotif(); "Opening notifications 🔔" }
+            "lock"          -> { AssistantAccessibilityService.lockScreen(); "Screen locked 🔒" }
+            "power_menu"    -> { AssistantAccessibilityService.goBack();    "Power menu not supported on this device" }
+            else            -> "Unknown navigation action"
         }
     }
 

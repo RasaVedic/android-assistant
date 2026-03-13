@@ -1,16 +1,13 @@
 package com.example.assistant
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.assistant.databinding.ActivitySettingsBinding
 
-/**
- * SettingsActivity.kt
- * Lets the user enter their Gemini API key and save it.
- * Key is stored in SharedPreferences (private to this app).
- */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
@@ -22,30 +19,44 @@ class SettingsActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbarSettings)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Settings"
+        supportActionBar?.title = "PKassist Settings"
 
-        // Load saved key
         val prefs = getSharedPreferences("assistant_prefs", Context.MODE_PRIVATE)
-        val savedKey = prefs.getString("gemini_api_key", "")
-        binding.etApiKey.setText(savedKey)
+
+        // Load saved Gemini key
+        binding.etApiKey.setText(prefs.getString("gemini_api_key", ""))
 
         binding.btnSaveKey.setOnClickListener {
             val key = binding.etApiKey.text?.toString()?.trim() ?: ""
             prefs.edit().putString("gemini_api_key", key).apply()
-            Toast.makeText(this, if (key.isNotEmpty()) "API key saved!" else "API key cleared", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, if (key.isNotEmpty()) "✓ API key saved!" else "API key cleared", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnGetKey.setOnClickListener {
-            val intent = android.content.Intent(
-                android.content.Intent.ACTION_VIEW,
-                android.net.Uri.parse("https://aistudio.google.com/app/apikey")
-            )
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aistudio.google.com/app/apikey")))
+        }
+
+        // Background service toggle
+        binding.switchBackground.isChecked = prefs.getBoolean("bg_service", true)
+        binding.switchBackground.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("bg_service", isChecked).apply()
+            if (isChecked) AssistantBackgroundService.start(this)
+            else AssistantBackgroundService.stop(this)
+            Toast.makeText(this, if (isChecked) "Background service ON" else "Background service OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        // Accessibility service
+        binding.btnAccessibility.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            Toast.makeText(this, "Find 'PKassist' and enable it", Toast.LENGTH_LONG).show()
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
+    override fun onResume() {
+        super.onResume()
+        val enabled = AssistantAccessibilityService.isEnabled()
+        binding.tvAccessibilityStatus.text = if (enabled) "✓ Accessibility: Enabled" else "✗ Accessibility: Disabled"
     }
+
+    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 }
