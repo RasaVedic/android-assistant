@@ -46,8 +46,8 @@
             android:layout_height="48dp"
             android:layout_marginTop="32dp"
             app:tabBackground="@color/bg_surface"
+            app:tabTextColor="@color/text_secondary"
             app:tabSelectedTextColor="@color/brand_primary"
-            app:tabUnselectedTextColor="@color/text_secondary"
             app:tabIndicatorColor="@color/brand_primary"
             app:tabMode="fixed"
             app:tabGravity="fill">
