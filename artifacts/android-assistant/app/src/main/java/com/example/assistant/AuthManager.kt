@@ -12,18 +12,20 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Firebase Auth via REST API — no google-services.json required at build time.
- * User provides their Firebase Web API Key in Settings → Account.
+ * Firebase Web API Key is loaded from:
+ *   1. SharedPreferences (user-entered in Settings → Account)
+ *   2. BuildConfig.FIREBASE_API_KEY (baked in at build time from GitHub secret)
  */
 object AuthManager {
 
-    private const val PREFS_NAME = "assistant_prefs"
-    private const val KEY_USER_EMAIL = "user_email"
-    private const val KEY_USER_NAME = "user_name"
-    private const val KEY_USER_PHOTO = "user_photo"
-    private const val KEY_ID_TOKEN = "firebase_id_token"
-    private const val KEY_REFRESH_TOKEN = "firebase_refresh_token"
+    private const val PREFS_NAME       = "assistant_prefs"
+    private const val KEY_USER_EMAIL   = "user_email"
+    private const val KEY_USER_NAME    = "user_name"
+    private const val KEY_USER_PHOTO   = "user_photo"
+    private const val KEY_ID_TOKEN     = "firebase_id_token"
+    private const val KEY_REFRESH_TOKEN= "firebase_refresh_token"
     private const val KEY_FIREBASE_API_KEY = "firebase_api_key"
-    private const val KEY_SKIP_LOGIN = "skip_login"
+    private const val KEY_SKIP_LOGIN   = "skip_login"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -32,6 +34,23 @@ object AuthManager {
 
     private val JSON = "application/json; charset=utf-8".toMediaType()
 
+    // ── Firebase API key resolution ───────────────────────────────────────────
+    // Priority: 1) User-entered in Settings, 2) Build-time GitHub secret
+    fun getFirebaseApiKey(ctx: Context): String? {
+        val manual = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_FIREBASE_API_KEY, null)
+        if (!manual.isNullOrBlank()) return manual
+        val baked = BuildConfig.FIREBASE_API_KEY
+        return if (baked.isNotBlank()) baked else null
+    }
+
+    fun hasFirebaseKey(ctx: Context): Boolean = !getFirebaseApiKey(ctx).isNullOrBlank()
+
+    fun saveFirebaseApiKey(ctx: Context, apiKey: String) {
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_FIREBASE_API_KEY, apiKey).apply()
+    }
+
     // ── Stored user info ──────────────────────────────────────────────────────
 
     fun isLoggedIn(ctx: Context): Boolean {
@@ -39,25 +58,13 @@ object AuthManager {
         return prefs.getString(KEY_USER_EMAIL, null) != null
     }
 
-    fun getCurrentUserEmail(ctx: Context): String? {
-        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_USER_EMAIL, null)
-    }
-
-    fun getCurrentUserName(ctx: Context): String? {
-        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_USER_NAME, null)
-    }
-
-    fun getFirebaseApiKey(ctx: Context): String? {
-        return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_FIREBASE_API_KEY, null)
-    }
-
-    fun saveFirebaseApiKey(ctx: Context, apiKey: String) {
+    fun getCurrentUserEmail(ctx: Context): String? =
         ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_FIREBASE_API_KEY, apiKey).apply()
-    }
+            .getString(KEY_USER_EMAIL, null)
+
+    fun getCurrentUserName(ctx: Context): String? =
+        ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_USER_NAME, null)
 
     fun signOut(ctx: Context) {
         ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
@@ -83,7 +90,8 @@ object AuthManager {
     suspend fun signInWithEmail(ctx: Context, email: String, password: String): AuthResult =
         withContext(Dispatchers.IO) {
             val apiKey = getFirebaseApiKey(ctx)
-                ?: return@withContext AuthResult(false, "Firebase API key not set. Add it in Settings → Account.")
+                ?: return@withContext AuthResult(false,
+                    "Firebase key not set.\n\nGo to Settings → Account → enter your Firebase Web API Key, then try again.")
             try {
                 val body = JSONObject().apply {
                     put("email", email)
@@ -104,8 +112,8 @@ object AuthManager {
                     return@withContext AuthResult(false, friendlyError(errMsg))
                 }
 
-                val userEmail = json.optString("email")
-                val idToken = json.optString("idToken")
+                val userEmail    = json.optString("email")
+                val idToken      = json.optString("idToken")
                 val refreshToken = json.optString("refreshToken")
 
                 saveUser(ctx, userEmail, null, null, idToken, refreshToken)
@@ -119,7 +127,8 @@ object AuthManager {
     suspend fun registerWithEmail(ctx: Context, email: String, password: String): AuthResult =
         withContext(Dispatchers.IO) {
             val apiKey = getFirebaseApiKey(ctx)
-                ?: return@withContext AuthResult(false, "Firebase API key not set. Add it in Settings → Account.")
+                ?: return@withContext AuthResult(false,
+                    "Firebase key not set.\n\nGo to Settings → Account → enter your Firebase Web API Key, then try again.")
             try {
                 val body = JSONObject().apply {
                     put("email", email)
@@ -140,8 +149,8 @@ object AuthManager {
                     return@withContext AuthResult(false, friendlyError(errMsg))
                 }
 
-                val userEmail = json.optString("email")
-                val idToken = json.optString("idToken")
+                val userEmail    = json.optString("email")
+                val idToken      = json.optString("idToken")
                 val refreshToken = json.optString("refreshToken")
 
                 saveUser(ctx, userEmail, null, null, idToken, refreshToken)
@@ -155,7 +164,8 @@ object AuthManager {
     suspend fun sendPasswordReset(ctx: Context, email: String): AuthResult =
         withContext(Dispatchers.IO) {
             val apiKey = getFirebaseApiKey(ctx)
-                ?: return@withContext AuthResult(false, "Firebase API key not set. Add it in Settings → Account.")
+                ?: return@withContext AuthResult(false,
+                    "Firebase key not set. Add it in Settings → Account.")
             try {
                 val body = JSONObject().apply {
                     put("requestType", "PASSWORD_RESET")
@@ -202,14 +212,16 @@ object AuthManager {
     }
 
     private fun friendlyError(code: String): String = when {
-        code.contains("EMAIL_NOT_FOUND") -> "No account found with this email."
-        code.contains("INVALID_PASSWORD") || code.contains("INVALID_LOGIN_CREDENTIALS") ->
-            "Incorrect email or password."
-        code.contains("USER_DISABLED") -> "This account has been disabled."
-        code.contains("EMAIL_EXISTS") -> "This email is already registered. Try signing in."
-        code.contains("WEAK_PASSWORD") -> "Password must be at least 6 characters."
-        code.contains("INVALID_EMAIL") -> "Please enter a valid email address."
-        code.contains("TOO_MANY_ATTEMPTS") -> "Too many attempts. Please try again later."
+        code.contains("EMAIL_NOT_FOUND")        -> "No account found with this email."
+        code.contains("INVALID_PASSWORD") || code.contains("INVALID_LOGIN_CREDENTIALS")
+                                                -> "Incorrect email or password."
+        code.contains("USER_DISABLED")          -> "This account has been disabled."
+        code.contains("EMAIL_EXISTS")           -> "This email is already registered. Try signing in."
+        code.contains("WEAK_PASSWORD")          -> "Password must be at least 6 characters."
+        code.contains("INVALID_EMAIL")          -> "Please enter a valid email address."
+        code.contains("TOO_MANY_ATTEMPTS")      -> "Too many attempts. Please try again later."
+        code.contains("API_KEY_INVALID") || code.contains("INVALID_API_KEY")
+                                                -> "Invalid Firebase API key. Check Settings → Account."
         else -> code.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
     }
 }

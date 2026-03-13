@@ -1,64 +1,168 @@
 # .github/workflows/build-apk.yml
 #
-# GitHub Actions workflow that automatically builds the debug APK
-# every time you push to the main branch.
+# Aria AI — Automated Build & Release Workflow
 #
-# HOW TO USE:
-# 1. Push this project to GitHub
-# 2. GitHub will automatically run this workflow
-# 3. When it finishes, click "Actions" tab → select the latest run → scroll down to "Artifacts"
-# 4. Download "debug-apk" and install it on your phone
+# WHAT IT DOES:
+# 1. On every push to main/master  → builds a Debug APK (for testing)
+# 2. When you push a version tag   → builds a Release APK + creates GitHub Release
+#    with the APK attached and sends notifications to watchers.
+#
+# HOW TO TRIGGER A RELEASE:
+#   git tag v1.7
+#   git push origin v1.7
+#   → GitHub will build the APK and create a release automatically.
+#
+# REQUIRED SECRETS (set in GitHub repo → Settings → Secrets):
+#   GEMINI_API_KEY    — bakes Gemini key into the APK
+#   FIREBASE_API_KEY  — bakes Firebase key into the APK
 
-name: Build Debug APK
+name: Build & Release Aria
 
-# When to run: on every push to the main branch, or when you trigger it manually
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*.*'          # trigger release on version tags: v1.7, v1.8, etc.
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:   # allows manual trigger from the Actions tab
+  workflow_dispatch:    # manual trigger from Actions tab
 
 jobs:
-  build:
-    name: Build APK
-    runs-on: ubuntu-latest   # free GitHub-hosted Linux runner
+
+  # ── Debug build (every push to main) ───────────────────────────────────────
+  build-debug:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.ref, 'refs/tags/')"
 
     steps:
-      # Step 1: Check out the code
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Step 2: Set up Java 17 (required for the Android Gradle Plugin 8.x)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'   # Eclipse Temurin is a reliable free JDK
-          cache: gradle             # cache Gradle to speed up future builds
+          distribution: 'temurin'
+          cache: gradle
 
-      # Step 3: Make the Gradle wrapper script executable (Linux needs this)
       - name: Grant execute permission for gradlew
+        working-directory: artifacts/android-assistant
         run: chmod +x gradlew
 
-      # Step 4: Build the debug APK
-      # 'assembleDebug' creates app/build/outputs/apk/debug/app-debug.apk
       - name: Build debug APK
+        working-directory: artifacts/android-assistant
         run: ./gradlew assembleDebug --no-daemon
         env:
-          # Prevent Gradle from trying to open a GUI
           TERM: dumb
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
 
-      # Step 5: Upload the APK so you can download it from the Actions tab
-      - name: Upload APK artifact
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30   # keep the file for 30 days
+          name: Aria-debug-apk
+          path: artifacts/android-assistant/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
 
-      # Step 6 (optional): Print the APK file size for reference
       - name: Show APK info
+        working-directory: artifacts/android-assistant
         run: |
-          echo "=== APK built successfully ==="
+          echo "=== Debug APK built successfully ==="
           ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+  # ── Release build (on version tag push) ────────────────────────────────────
+  release:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        working-directory: artifacts/android-assistant
+        run: chmod +x gradlew
+
+      - name: Build release APK
+        working-directory: artifacts/android-assistant
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          TERM: dumb
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+
+      - name: Rename APK
+        run: |
+          mkdir -p release-output
+          cp artifacts/android-assistant/app/build/outputs/apk/release/app-release-unsigned.apk \
+             release-output/Aria-${{ steps.version.outputs.VERSION }}.apk
+
+      - name: Read release notes from version.json
+        id: notes
+        run: |
+          NOTES=$(python3 -c "import json; d=json.load(open('artifacts/android-assistant/version.json')); print(d.get('releaseNotes',''))")
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update version.json downloadUrl
+        run: |
+          python3 -c "
+          import json
+          with open('artifacts/android-assistant/version.json', 'r') as f:
+              d = json.load(f)
+          tag = '${{ steps.version.outputs.VERSION }}'
+          d['downloadUrl'] = f'https://github.com/${{ github.repository }}/releases/download/{tag}/Aria-{tag}.apk'
+          with open('artifacts/android-assistant/version.json', 'w') as f:
+              json.dump(d, f, indent=2)
+          "
+
+      - name: Commit updated version.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add artifacts/android-assistant/version.json
+          git diff --cached --quiet || git commit -m "chore: update downloadUrl for ${{ steps.version.outputs.VERSION }}"
+          git push origin HEAD:main || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "Aria AI ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Aria AI ${{ steps.version.outputs.VERSION }}
+
+            ### What's new
+            ${{ steps.notes.outputs.NOTES }}
+
+            ---
+
+            ### How to install
+            1. Download **Aria-${{ steps.version.outputs.VERSION }}.apk** below
+            2. Open the downloaded file on your Android phone
+            3. Tap **Install** (allow "Unknown sources" if asked)
+            4. Open **Aria** and enjoy!
+          files: release-output/Aria-${{ steps.version.outputs.VERSION }}.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show release info
+        run: |
+          echo "=== Release APK ==="
+          ls -lh release-output/

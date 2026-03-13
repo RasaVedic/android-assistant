@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 
 /**
  * PermissionHelper.kt
- * Handles runtime permission requests for all features PKassist needs.
+ * Handles runtime permission requests for all features Aria needs.
  */
 object PermissionHelper {
 

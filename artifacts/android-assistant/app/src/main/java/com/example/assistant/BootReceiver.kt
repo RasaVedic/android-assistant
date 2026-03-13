@@ -6,7 +6,7 @@ import android.content.Intent
 
 /**
  * BootReceiver.kt
- * Automatically restarts the PKassist background service when the phone reboots.
+ * Automatically restarts the Aria background service when the phone reboots.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

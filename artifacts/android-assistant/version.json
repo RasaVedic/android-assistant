@@ -1,6 +1,6 @@
 {
-  "versionCode": 6,
-  "versionName": "1.6",
-  "releaseNotes": "Background service, accessibility, auto-update, professional settings, all permissions",
-  "downloadUrl": "https://github.com/RasaVedic/android-assistant/releases/download/v1.6/PKassist-v1.6.apk"
+  "versionCode": 7,
+  "versionName": "1.7",
+  "releaseNotes": "• App renamed to Aria everywhere\n• Background voice listening — like Google Assistant\n• Auto notification when new version is available\n• Selfie command: 'take selfie' or 'click selfie'\n• Alarm command improved with multiple clock app fallbacks\n• Firebase login now uses build-time key as fallback\n• Google Sign-In shows clear explanation\n• Settings reordered — Gemini key moved to bottom (optional)\n• More Indian apps supported: Paytm, GPay, PhonePe, Swiggy, Zomato\n• Play Store fallback when app not found",
+  "downloadUrl": "https://github.com/RasaVedic/android-assistant/releases/download/v1.7/Aria-v1.7.apk"
 }

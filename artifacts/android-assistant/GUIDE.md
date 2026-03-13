@@ -251,7 +251,7 @@ git push && git push --tags
 ### Step 4 — GitHub Actions runs automatically
 After the push, GitHub will:
 1. Build the APK (takes ~3-5 minutes)
-2. Create a **GitHub Release** named "PKassist v1.7"
+2. Create a **GitHub Release** named "Aria v1.7"
 3. Attach the APK directly to the release
 4. Update `version.json` so the update checker knows about the new version
 
