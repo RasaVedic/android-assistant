@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface">
+    android:background="@color/bg_deep">
 
     <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
@@ -15,7 +15,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Assistant"
+            app:title="Aria"
             app:menu="@menu/main_menu"
             app:navigationIcon="@android:drawable/ic_menu_compass" />
 
@@ -33,7 +33,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"
             android:gravity="center_vertical">
 
             <com.google.android.material.chip.Chip
@@ -42,7 +43,7 @@
                 android:layout_height="wrap_content"
                 android:text="Offline"
                 android:textSize="11sp"
-                app:chipBackgroundColor="@color/purple_200" />
+                app:chipBackgroundColor="@color/brand_primary" />
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
@@ -52,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:text="0 commands"
                 android:textSize="12sp"
-                android:alpha="0.6"
+                android:textColor="@color/text_hint"
                 android:paddingEnd="8dp" />
 
         </LinearLayout>
@@ -81,24 +82,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🎙️"
-                android:textSize="48sp"
-                android:layout_marginBottom="12dp" />
+                android:textSize="52sp"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Try saying a command"
+                android:text="Say or type a command"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="12dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="• open camera\n• call 98XXXXXXXX\n• set alarm 7am\n• search weather"
                 android:textSize="14sp"
-                android:alpha="0.6"
-                android:lineSpacingExtra="4dp"
+                android:textColor="@color/text_secondary"
+                android:lineSpacingExtra="6dp"
                 android:gravity="center" />
 
         </LinearLayout>
@@ -108,55 +110,76 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="0dp"
-            app:cardElevation="8dp">
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="@color/bg_surface">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:gravity="center_vertical">
+                android:orientation="vertical">
 
-                <!-- Mic button -->
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/btnMic"
-                    android:layout_width="wrap_content"
+                <!-- Listening indicator — hidden by default -->
+                <TextView
+                    android:id="@+id/tvListening"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:fabSize="mini"
-                    android:src="@android:drawable/ic_btn_speak_now"
-                    android:contentDescription="Voice input"
-                    android:layout_marginEnd="8dp" />
+                    android:text="🎙 Listening…"
+                    android:textSize="12sp"
+                    android:textColor="@color/brand_accent"
+                    android:gravity="center"
+                    android:paddingTop="6dp"
+                    android:visibility="gone" />
 
-                <!-- Text input -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="0dp"
+                <!-- Input row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:boxBackgroundMode="outline"
-                    app:boxCornerRadiusTopStart="24dp"
-                    app:boxCornerRadiusTopEnd="24dp"
-                    app:boxCornerRadiusBottomStart="24dp"
-                    app:boxCornerRadiusBottomEnd="24dp"
-                    android:hint="Type a command…">
+                    android:orientation="horizontal"
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCommand"
-                        android:layout_width="match_parent"
+                    <!-- Mic button -->
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/btnMic"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:imeOptions="actionSend"
-                        android:inputType="text"
-                        android:maxLines="2" />
+                        app:fabSize="mini"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:contentDescription="Voice input"
+                        android:layout_marginEnd="8dp" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+                    <!-- Text input -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:boxBackgroundMode="outline"
+                        app:boxCornerRadiusTopStart="24dp"
+                        app:boxCornerRadiusTopEnd="24dp"
+                        app:boxCornerRadiusBottomStart="24dp"
+                        app:boxCornerRadiusBottomEnd="24dp"
+                        android:hint="Type a command…">
 
-                <!-- Send button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSend"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Send"
-                    app:cornerRadius="24dp" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etCommand"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionSend"
+                            android:inputType="text"
+                            android:maxLines="2" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Send button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSend"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Send"
+                        app:cornerRadius="24dp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
