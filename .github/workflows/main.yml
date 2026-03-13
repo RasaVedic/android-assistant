@@ -30,27 +30,23 @@ jobs:
         run: chmod +x gradlew
 
       # Restore the consistent signing keystore (so updates work without uninstalling)
-      - name: Restore Signing Keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      - name: Build APK
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > pkassist.jks
-          echo "Keystore restored for consistent signing"
-
-      - name: Build APK (signed with consistent key)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-        run: |
-          bash gradlew assembleDebug --no-daemon \
-            -Pandroid.injected.signing.store.file=$(pwd)/pkassist.jks \
-            -Pandroid.injected.signing.store.password=pkassist123 \
-            -Pandroid.injected.signing.key.alias=pkassist \
-            -Pandroid.injected.signing.key.password=pkassist123
-
-      - name: Build APK (random signing key — updates need uninstall)
-        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
-        run: |
-          echo "⚠️  KEYSTORE_BASE64 secret not set — APK signed with random key"
-          echo "    Run the 'Generate Keystore' workflow once to fix this."
-          bash gradlew assembleDebug --no-daemon
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > pkassist.jks
+            echo "Keystore restored for consistent signing"
+            bash gradlew assembleDebug --no-daemon \
+              -Pandroid.injected.signing.store.file=$(pwd)/pkassist.jks \
+              -Pandroid.injected.signing.store.password=pkassist123 \
+              -Pandroid.injected.signing.key.alias=pkassist \
+              -Pandroid.injected.signing.key.password=pkassist123
+          else
+            echo "KEYSTORE_BASE64 secret not set — APK signed with random key"
+            echo "Run the 'Generate Keystore' workflow once to fix this."
+            bash gradlew assembleDebug --no-daemon
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
