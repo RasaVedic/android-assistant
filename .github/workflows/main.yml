@@ -36,6 +36,8 @@ jobs:
       - name: Build APK
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > pkassist.jks

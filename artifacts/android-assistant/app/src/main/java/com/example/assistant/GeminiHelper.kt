@@ -26,8 +26,12 @@ class GeminiHelper(private val context: Context) {
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     private fun getApiKey(): String {
+        // 1. Check if user has set a manual override in Settings
         val prefs = context.getSharedPreferences("assistant_prefs", Context.MODE_PRIVATE)
-        return prefs.getString("gemini_api_key", "") ?: ""
+        val manual = prefs.getString("gemini_api_key", "") ?: ""
+        if (manual.isNotBlank()) return manual
+        // 2. Fall back to key baked into APK at build time (from GitHub secret GEMINI_API_KEY)
+        return BuildConfig.GEMINI_API_KEY
     }
 
     fun hasApiKey(): Boolean = getApiKey().isNotBlank()

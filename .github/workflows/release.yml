@@ -69,18 +69,15 @@ jobs:
         run: chmod +x gradlew
 
       # ── 4. Build APK ───────────────────────────────────────────────────────
-      - name: Restore Signing Keystore
+      - name: Build Release APK
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > pkassist.jks
-          fi
-
-      - name: Build Release APK
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
         run: |
           chmod +x gradlew
-          if [ -f pkassist.jks ]; then
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > pkassist.jks
             bash gradlew assembleDebug --no-daemon \
               -Pandroid.injected.signing.store.file=$(pwd)/pkassist.jks \
               -Pandroid.injected.signing.store.password=pkassist123 \
