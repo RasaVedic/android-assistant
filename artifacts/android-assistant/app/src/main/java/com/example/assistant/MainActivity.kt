@@ -93,8 +93,18 @@ class MainActivity : AppCompatActivity() {
 
         geminiHelper = GeminiHelper(this)
 
+        // Request all runtime permissions at once
+        if (!PermissionHelper.allGranted(this)) {
+            PermissionHelper.requestAll(this, 100)
+        }
+
         // Start background service so app keeps running
         AssistantBackgroundService.start(this)
+
+        // Check for update in background (non-blocking)
+        lifecycleScope.launch {
+            UpdateChecker.checkAndPrompt(this@MainActivity)
+        }
 
         // RecyclerView setup
         adapter = CommandAdapter(commandHistory)

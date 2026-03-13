@@ -1,6 +1,3 @@
-// app/build.gradle.kts
-// Build config for the app module: SDK versions, dependencies, signing.
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,10 +9,16 @@ android {
 
     defaultConfig {
         applicationId = "com.example.assistant"
-        minSdk = 26          // Android 8.0+ (covers ~95% of devices)
+        minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 6
+        versionName = "1.6"
+
+        // Expose version info to Kotlin code
+        buildConfigField("String", "VERSION_CHECK_URL",
+            "\"https://raw.githubusercontent.com/RasaVedic/android-assistant/master/artifacts/android-assistant/version.json\"")
+        buildConfigField("String", "DOWNLOAD_PAGE_URL",
+            "\"https://github.com/RasaVedic/android-assistant/actions\"")
     }
 
     buildTypes {
@@ -33,12 +36,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+    kotlinOptions { jvmTarget = "1.8" }
 
     buildFeatures {
-        viewBinding = true   // Makes it easy to access views without findViewById
+        viewBinding = true
+        buildConfig = true   // Required to access BuildConfig in Kotlin code
     }
 }
 
@@ -48,7 +50,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.activity.ktx)
-    implementation(libs.okhttp)               // HTTP client for Gemini API
-    implementation(libs.gson)                 // JSON parsing for Gemini API
-    implementation(libs.kotlinx.coroutines.android)  // For running network calls off the main thread
+    implementation(libs.okhttp)
+    implementation(libs.gson)
+    implementation(libs.kotlinx.coroutines.android)
 }
