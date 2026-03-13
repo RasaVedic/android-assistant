@@ -193,10 +193,10 @@ class MainActivity : AppCompatActivity() {
     private fun updateStatusChip() {
         if (isOnline()) {
             binding.chipStatus.text = "Online – Gemini"
-            binding.chipStatus.setChipBackgroundColorResource(com.google.android.material.R.color.design_default_color_primary)
+            binding.chipStatus.setChipBackgroundColorResource(R.color.teal_700)
         } else {
             binding.chipStatus.text = "Offline"
-            binding.chipStatus.setChipBackgroundColorResource(android.R.color.darker_gray)
+            binding.chipStatus.setChipBackgroundColorResource(R.color.purple_200)
         }
     }
 
