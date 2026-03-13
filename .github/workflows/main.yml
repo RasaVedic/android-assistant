@@ -1,9 +1,12 @@
-name: Build Debug APK
+name: Build & Publish Latest APK
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -29,7 +32,7 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Restore the consistent signing keystore (so updates work without uninstalling)
+      # ── Build APK (signed if keystore secret is set) ───────────────────────
       - name: Build APK
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -44,14 +47,51 @@ jobs:
               -Pandroid.injected.signing.key.password=pkassist123
           else
             echo "KEYSTORE_BASE64 secret not set — APK signed with random key"
-            echo "Run the 'Generate Keystore' workflow once to fix this."
             bash gradlew assembleDebug --no-daemon
           fi
 
-      - name: Upload APK
+      # ── Rename APK ─────────────────────────────────────────────────────────
+      - name: Rename APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk PKassist-latest.apk
+
+      # ── Upload as workflow artifact (30-day backup) ────────────────────────
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PKassist-debug
-          path: artifacts/android-assistant/app/build/outputs/apk/debug/app-debug.apk
+          name: PKassist-latest
+          path: artifacts/android-assistant/PKassist-latest.apk
           if-no-files-found: error
           retention-days: 30
+
+      # ── Move the 'latest' tag to this commit ──────────────────────────────
+      - name: Update latest tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f latest
+          git push origin latest --force
+        working-directory: ${{ github.workspace }}
+
+      # ── Publish / update the GitHub Release ───────────────────────────────
+      - name: Publish Latest Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "PKassist — Latest Build"
+          body: |
+            ## Latest Build
+
+            This release is updated automatically on every push to master.
+
+            **Commit:** `${{ github.sha }}`
+            **Branch:** `${{ github.ref_name }}`
+
+            ### How to install
+            1. Download **PKassist-latest.apk** below
+            2. Transfer to your Android phone
+            3. Enable "Install from unknown sources" in Settings if asked
+            4. Tap the APK to install
+          files: artifacts/android-assistant/PKassist-latest.apk
+          prerelease: true
+          make_latest: true
