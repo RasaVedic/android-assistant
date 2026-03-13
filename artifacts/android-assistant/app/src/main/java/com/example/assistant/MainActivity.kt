@@ -110,6 +110,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     // -----------------------------------------------------------------------
+    // Inflate toolbar menu
+    // -----------------------------------------------------------------------
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    // -----------------------------------------------------------------------
     // onCreate
     // -----------------------------------------------------------------------
     override fun onCreate(savedInstanceState: Bundle?) {

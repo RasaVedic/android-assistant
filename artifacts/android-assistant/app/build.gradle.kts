@@ -15,11 +15,16 @@ android {
         versionName = "1.6"
 
         // Expose version info to Kotlin code
-        // HEAD always resolves to the default branch (main or master) automatically
         buildConfigField("String", "VERSION_CHECK_URL",
             "\"https://raw.githubusercontent.com/RasaVedic/android-assistant/HEAD/artifacts/android-assistant/version.json\"")
         buildConfigField("String", "DOWNLOAD_PAGE_URL",
             "\"https://github.com/RasaVedic/android-assistant/releases/latest\"")
+
+        // API keys baked in at build time from GitHub Secrets (set GEMINI_API_KEY secret in repo)
+        buildConfigField("String", "GEMINI_API_KEY",
+            "\"${System.getenv("GEMINI_API_KEY") ?: ""}\"")
+        buildConfigField("String", "FIREBASE_API_KEY",
+            "\"${System.getenv("FIREBASE_API_KEY") ?: ""}\"")
     }
 
     buildTypes {
