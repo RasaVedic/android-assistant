@@ -1,6 +1,8 @@
 package com.example.assistant
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -9,29 +11,39 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.speech.RecognizerIntent
+import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import android.widget.TextView
 import com.example.assistant.databinding.ActivityMainBinding
 import com.example.assistant.databinding.ItemCommandBinding
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
-data class CommandItem(val command: String, val result: String, val isOnline: Boolean)
+data class CommandItem(
+    val command: String,
+    val result: String,
+    val isOnline: Boolean,
+    val time: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+)
 
 class CommandAdapter(private val items: MutableList<CommandItem>) :
     RecyclerView.Adapter<CommandAdapter.ViewHolder>() {
+
+    private var lastAnimatedPosition = -1
 
     class ViewHolder(val binding: ItemCommandBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -44,10 +56,23 @@ class CommandAdapter(private val items: MutableList<CommandItem>) :
         val item = items[position]
         holder.binding.tvCommandText.text = "\"${item.command}\""
         holder.binding.tvResult.text = item.result
-        holder.binding.chipMode.text = if (item.isOnline) "Gemini" else "Offline"
-        holder.binding.chipMode.setChipBackgroundColorResource(
-            if (item.isOnline) R.color.teal_200 else R.color.purple_200
-        )
+        holder.binding.tvTimestamp.text = item.time
+
+        if (item.isOnline) {
+            holder.binding.chipMode.text = "Gemini"
+            holder.binding.chipMode.setChipBackgroundColorResource(R.color.status_online)
+            holder.binding.viewAccent.setBackgroundResource(R.color.status_online)
+        } else {
+            holder.binding.chipMode.text = "Offline"
+            holder.binding.chipMode.setChipBackgroundColorResource(R.color.brand_primary)
+            holder.binding.viewAccent.setBackgroundResource(R.color.brand_primary)
+        }
+
+        if (position > lastAnimatedPosition) {
+            val anim = AnimationUtils.loadAnimation(holder.itemView.context, R.anim.slide_in_bottom)
+            holder.itemView.startAnimation(anim)
+            lastAnimatedPosition = position
+        }
     }
 }
 
@@ -57,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var geminiHelper: GeminiHelper
     private val commandHistory = mutableListOf<CommandItem>()
     private lateinit var adapter: CommandAdapter
+    private var micAnimator: ObjectAnimator? = null
 
     // -----------------------------------------------------------------------
     // Permission launcher for CALL_PHONE
@@ -71,6 +97,7 @@ class MainActivity : AppCompatActivity() {
     private val voiceLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        stopListeningState()
         if (result.resultCode == Activity.RESULT_OK) {
             val matches = result.data
                 ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
@@ -93,20 +120,16 @@ class MainActivity : AppCompatActivity() {
 
         geminiHelper = GeminiHelper(this)
 
-        // Request all runtime permissions at once
         if (!PermissionHelper.allGranted(this)) {
             PermissionHelper.requestAll(this, 100)
         }
 
-        // Start background service so app keeps running
         AssistantBackgroundService.start(this)
 
-        // Check for update in background (non-blocking)
         lifecycleScope.launch {
             UpdateChecker.checkAndPrompt(this@MainActivity)
         }
 
-        // RecyclerView setup
         adapter = CommandAdapter(commandHistory)
         binding.rvHistory.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
@@ -116,7 +139,6 @@ class MainActivity : AppCompatActivity() {
         updateStatusChip()
         updateEmptyState()
 
-        // Request CALL_PHONE permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
             != PackageManager.PERMISSION_GRANTED) {
             callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
@@ -132,6 +154,7 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
+                overridePendingTransition(R.anim.activity_enter, R.anim.activity_exit)
                 true
             }
             R.id.action_clear -> {
@@ -179,10 +202,36 @@ class MainActivity : AppCompatActivity() {
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
         }
         try {
+            startListeningState()
             voiceLauncher.launch(intent)
         } catch (e: Exception) {
+            stopListeningState()
             addToHistory("Voice", "Speech recognition not available on this device. Use text input.", false)
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Mic listening state — pulse animation + label
+    // -----------------------------------------------------------------------
+    private fun startListeningState() {
+        binding.tvListening.visibility = View.VISIBLE
+        micAnimator = ObjectAnimator.ofPropertyValuesHolder(
+            binding.btnMic,
+            PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.18f, 1f),
+            PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.18f, 1f)
+        ).apply {
+            duration = 700
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+    }
+
+    private fun stopListeningState() {
+        binding.tvListening.visibility = View.GONE
+        micAnimator?.cancel()
+        micAnimator = null
+        binding.btnMic.scaleX = 1f
+        binding.btnMic.scaleY = 1f
     }
 
     // -----------------------------------------------------------------------
@@ -244,7 +293,7 @@ class MainActivity : AppCompatActivity() {
             else             -> "Offline"
         }
         binding.chipStatus.setChipBackgroundColorResource(
-            if (online && hasKey) R.color.teal_700 else R.color.purple_200
+            if (online && hasKey) R.color.status_online else R.color.brand_primary
         )
     }
 
@@ -263,6 +312,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateStatusChip() // Refresh after returning from Settings
+        updateStatusChip()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        micAnimator?.cancel()
     }
 }
