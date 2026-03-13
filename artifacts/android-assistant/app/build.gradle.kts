@@ -15,10 +15,11 @@ android {
         versionName = "1.6"
 
         // Expose version info to Kotlin code
+        // HEAD always resolves to the default branch (main or master) automatically
         buildConfigField("String", "VERSION_CHECK_URL",
-            "\"https://raw.githubusercontent.com/RasaVedic/android-assistant/master/artifacts/android-assistant/version.json\"")
+            "\"https://raw.githubusercontent.com/RasaVedic/android-assistant/HEAD/artifacts/android-assistant/version.json\"")
         buildConfigField("String", "DOWNLOAD_PAGE_URL",
-            "\"https://github.com/RasaVedic/android-assistant/actions\"")
+            "\"https://github.com/RasaVedic/android-assistant/releases/latest\"")
     }
 
     buildTypes {

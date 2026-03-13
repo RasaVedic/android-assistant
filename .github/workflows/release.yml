@@ -1,0 +1,127 @@
+name: Release APK
+
+# Trigger: push a version tag like  git tag v1.7 && git push --tags
+on:
+  push:
+    tags:
+      - 'v*.*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 1.7)'
+        required: true
+      release_notes:
+        description: 'What is new in this release'
+        required: false
+        default: 'Bug fixes and improvements'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: artifacts/android-assistant
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      # ── 2. Resolve version info ────────────────────────────────────────────
+      - name: Set version variables
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_NAME="${{ github.event.inputs.version_name }}"
+            RELEASE_NOTES="${{ github.event.inputs.release_notes }}"
+            TAG_NAME="v${VERSION_NAME}"
+          else
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            VERSION_NAME="${TAG_NAME#v}"
+            RELEASE_NOTES="PKassist ${TAG_NAME} release"
+          fi
+          # Parse versionCode from build.gradle.kts
+          VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | grep -o '[0-9]\+')
+          echo "TAG_NAME=${TAG_NAME}"        >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "RELEASE_NOTES=${RELEASE_NOTES}" >> $GITHUB_OUTPUT
+
+      # ── 3. Java + Gradle ───────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # ── 4. Build APK ───────────────────────────────────────────────────────
+      - name: Build Release APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk \
+             PKassist-${{ steps.version.outputs.TAG_NAME }}.apk
+
+      # ── 5. Update version.json ─────────────────────────────────────────────
+      - name: Update version.json
+        run: |
+          REPO="${{ github.repository }}"
+          TAG="${{ steps.version.outputs.TAG_NAME }}"
+          VCODE="${{ steps.version.outputs.VERSION_CODE }}"
+          VNAME="${{ steps.version.outputs.VERSION_NAME }}"
+          NOTES="${{ steps.version.outputs.RELEASE_NOTES }}"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/PKassist-${TAG}.apk"
+
+          cat > version.json <<EOF
+          {
+            "versionCode": ${VCODE},
+            "versionName": "${VNAME}",
+            "releaseNotes": "${NOTES}",
+            "downloadUrl": "${DOWNLOAD_URL}"
+          }
+          EOF
+
+      # ── 6. Commit version.json back to main ────────────────────────────────
+      - name: Commit version.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git diff --staged --quiet || git commit -m "chore: update version.json for ${{ steps.version.outputs.TAG_NAME }}"
+          git push origin HEAD:main || true
+        working-directory: artifacts/android-assistant
+
+      # ── 7. Create GitHub Release with APK attached ─────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG_NAME }}
+          name: "PKassist ${{ steps.version.outputs.TAG_NAME }}"
+          body: |
+            ## PKassist ${{ steps.version.outputs.TAG_NAME }}
+
+            ${{ steps.version.outputs.RELEASE_NOTES }}
+
+            ### How to install
+            1. Download **PKassist-${{ steps.version.outputs.TAG_NAME }}.apk** below
+            2. Transfer to your Android phone
+            3. Enable "Install from unknown sources" in Settings if asked
+            4. Tap the APK to install — the app will update automatically
+          files: artifacts/android-assistant/PKassist-${{ steps.version.outputs.TAG_NAME }}.apk
+          draft: false
+          prerelease: false

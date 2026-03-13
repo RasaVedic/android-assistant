@@ -218,3 +218,63 @@ To find an app's package name: go to Play Store → click the app → copy the `
 
 ### Change the App Theme Colors
 Edit `app/src/main/res/values/colors.xml` and `themes.xml`.
+
+---
+
+## How to Release a New Version
+
+Every time you make changes and want users to receive an update notification, follow these steps.
+
+### Step 1 — Make your code changes
+Edit whatever files you need to change.
+
+### Step 2 — Bump the version
+Run the bump script from the `artifacts/android-assistant/` folder:
+```bash
+cd artifacts/android-assistant
+chmod +x bump-version.sh
+./bump-version.sh 1.7 "Added voice shortcuts and dark mode"
+```
+
+This script automatically:
+- Increases `versionCode` by 1 in `build.gradle.kts`
+- Sets the new `versionName`
+- Updates `version.json` with the correct APK download link
+- Commits both files
+- Creates a git tag `v1.7`
+
+### Step 3 — Push the tag to GitHub
+```bash
+git push && git push --tags
+```
+
+### Step 4 — GitHub Actions runs automatically
+After the push, GitHub will:
+1. Build the APK (takes ~3-5 minutes)
+2. Create a **GitHub Release** named "PKassist v1.7"
+3. Attach the APK directly to the release
+4. Update `version.json` so the update checker knows about the new version
+
+### Step 5 — Users get the update notification
+The next time a user opens the app, it checks `version.json` from GitHub.  
+If `versionCode` in the file is higher than the installed app, a dialog appears:
+
+> **"Update Available — v1.7"**  
+> [Download Now]  [Later]
+
+Tapping **Download Now** opens the GitHub Release page where they can download and install the new APK.
+
+---
+
+## Where Each Version File Lives
+
+| File | Purpose |
+|------|---------|
+| `app/build.gradle.kts` | Controls what version is baked into the APK |
+| `version.json` | Remote file the app reads to check for updates |
+| `.github/workflows/release.yml` | Builds APK + creates GitHub Release on every `v*` tag |
+| `.github/workflows/main.yml` | Builds debug APK on every push to main (for testing) |
+
+### Manual check in Settings
+Users can also go to **Settings → Check for Update** inside the app at any time.
+This shows the current version and allows a manual update check.

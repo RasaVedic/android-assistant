@@ -61,15 +61,22 @@ object UpdateChecker {
     }
 
     private fun showUpdateDialog(context: Context, info: VersionInfo) {
+        val downloadUrl = info.downloadUrl.ifBlank { BuildConfig.DOWNLOAD_PAGE_URL }
         AlertDialog.Builder(context)
-            .setTitle("🆕 Update Available — v${info.versionName}")
-            .setMessage("What's new:\n${info.releaseNotes}\n\nDownload the new APK from GitHub Actions.")
-            .setPositiveButton("Download Now") { _, _ ->
+            .setTitle("Update Available — v${info.versionName}")
+            .setMessage("What's new:\n\n${info.releaseNotes}\n\nTap 'Download' to get the new APK. After downloading, tap the file to install.")
+            .setPositiveButton("Download") { _, _ ->
                 context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse(info.downloadUrl))
+                    Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
+                )
+            }
+            .setNeutralButton("View Release") { _, _ ->
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.DOWNLOAD_PAGE_URL))
                 )
             }
             .setNegativeButton("Later", null)
+            .setCancelable(false)
             .show()
     }
 }
