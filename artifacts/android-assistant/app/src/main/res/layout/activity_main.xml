@@ -92,15 +92,21 @@
             android:layout_marginEnd="8dp" />
 
         <!-- Text input field -->
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etCommand"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/hint_command"
-            android:imeOptions="actionSend"
-            android:inputType="text"
-            android:maxLines="2" />
+            android:layout_weight="1">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCommand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_command"
+                android:imeOptions="actionSend"
+                android:inputType="text"
+                android:maxLines="2" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Send button -->
         <com.google.android.material.button.MaterialButton
