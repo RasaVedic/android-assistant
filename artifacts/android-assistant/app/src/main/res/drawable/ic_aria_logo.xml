@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Outer glow ring -->
+    <path
+        android:fillColor="#207C6DFF"
+        android:pathData="M60,4 A56,56 0,1,1 60,116 A56,56 0,1,1 60,4 Z" />
+
+    <!-- Main circle background -->
+    <path
+        android:fillColor="#7C6DFF"
+        android:pathData="M60,12 A48,48 0,1,1 60,108 A48,48 0,1,1 60,12 Z" />
+
+    <!-- Inner subtle gradient overlay circle -->
+    <path
+        android:fillColor="#3000E5FF"
+        android:pathData="M60,12 A48,48 0,0,1 108,60 L60,60 Z" />
+
+    <!-- Letter A - outer shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,26 L82,88 L71,88 L66,72 L54,72 L49,88 L38,88 Z" />
+
+    <!-- Letter A - inner cutout (create hollow A) -->
+    <path
+        android:fillColor="#7C6DFF"
+        android:pathData="M60,40 L69,68 L51,68 Z" />
+
+    <!-- Crossbar highlight -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M50,60 L70,60 L70,64 L50,64 Z" />
+
+    <!-- Top accent dot -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M60,22 A5,5 0,1,1 60,12 A5,5 0,1,1 60,22 Z" />
+</vector>
