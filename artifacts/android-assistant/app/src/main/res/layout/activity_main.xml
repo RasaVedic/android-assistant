@@ -1,121 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  activity_main.xml
-  The main screen layout. Contains:
-    - A toolbar at the top showing the app name and online/offline badge
-    - A scrollable area that shows the assistant's response
-    - A text input field at the bottom
-    - A microphone button to use voice input
-    - A send button to submit typed commands
--->
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
-    <!-- Top toolbar -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        app:title="@string/app_name"
-        app:titleTextColor="@color/white"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <!-- Online/Offline status badge -->
-    <com.google.android.material.chip.Chip
-        android:id="@+id/chipStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/offline_mode"
-        android:textSize="11sp"
-        app:chipBackgroundColor="@color/teal_200"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Assistant"
+            app:menu="@menu/main_menu"
+            app:navigationIcon="@android:drawable/ic_menu_compass" />
 
-    <!-- Result / response area (scrollable) -->
-    <ScrollView
-        android:id="@+id/scrollResult"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintTop_toBottomOf="@id/chipStatus"
-        app:layout_constraintBottom_toTopOf="@id/inputRow"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <TextView
-            android:id="@+id/tvResult"
+    <!-- Main content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Status chip row -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:text="Say a command or type one below.\n\nExamples:\n• open camera\n• call John\n• set alarm 7am\n• search weather today"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp"
-            android:background="@android:color/transparent" />
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
 
-    </ScrollView>
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Offline"
+                android:textSize="11sp"
+                app:chipBackgroundColor="@color/purple_200" />
 
-    <!-- Bottom input row: mic + text field + send button -->
-    <LinearLayout
-        android:id="@+id/inputRow"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical"
-        android:background="?attr/colorSurfaceVariant"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+            <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
-        <!-- Microphone button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMic"
-            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:contentDescription="@string/btn_mic"
-            app:icon="@android:drawable/ic_btn_speak_now"
-            app:iconSize="24dp"
-            app:iconPadding="0dp"
-            android:layout_marginEnd="8dp" />
+            <TextView
+                android:id="@+id/tvCommandCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 commands"
+                android:textSize="12sp"
+                android:alpha="0.6"
+                android:paddingEnd="8dp" />
 
-        <!-- Text input field -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
+        </LinearLayout>
+
+        <!-- Command history list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvHistory"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp" />
+
+        <!-- Empty state (shown when no commands yet) -->
+        <LinearLayout
+            android:id="@+id/layoutEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎙️"
+                android:textSize="48sp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Try saying a command"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• open camera\n• call 98XXXXXXXX\n• set alarm 7am\n• search weather"
+                android:textSize="14sp"
+                android:alpha="0.6"
+                android:lineSpacingExtra="4dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Bottom input bar -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            app:cardCornerRadius="0dp"
+            app:cardElevation="8dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etCommand"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/hint_command"
-                android:imeOptions="actionSend"
-                android:inputType="text"
-                android:maxLines="2" />
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:gravity="center_vertical">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <!-- Mic button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnMic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:fabSize="mini"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:contentDescription="Voice input"
+                    android:layout_marginEnd="8dp" />
 
-        <!-- Send button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="@string/btn_send" />
+                <!-- Text input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:boxBackgroundMode="outline"
+                    app:boxCornerRadiusTopStart="24dp"
+                    app:boxCornerRadiusTopEnd="24dp"
+                    app:boxCornerRadiusBottomStart="24dp"
+                    app:boxCornerRadiusBottomEnd="24dp"
+                    android:hint="Type a command…">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCommand"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionSend"
+                        android:inputType="text"
+                        android:maxLines="2" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Send button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Send"
+                    app:cornerRadius="24dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

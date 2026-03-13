@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  strings.xml
-  All user-visible text lives here. This makes it easy to translate the app later.
--->
 <resources>
     <string name="app_name">Assistant</string>
-    <string name="hint_command">Type a command or tap the mic…</string>
+    <string name="hint_command">Type a command…</string>
     <string name="btn_send">Send</string>
-    <string name="btn_mic">Mic</string>
-    <string name="result_label">Result</string>
-    <string name="listening">Listening…</string>
-    <string name="offline_mode">Offline mode</string>
-    <string name="online_mode">Online – using Gemini</string>
-    <string name="permission_denied">Microphone permission denied</string>
-    <string name="no_speech_recognizer">Speech recognizer not available on this device</string>
+    <string name="offline_mode">Offline</string>
+    <string name="online_mode">Online · Gemini</string>
+    <string name="appbar_scrolling_view_behavior" translatable="false">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
 </resources>

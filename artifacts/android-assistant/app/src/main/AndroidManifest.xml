@@ -1,21 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  AndroidManifest.xml
-  Declares the app's permissions, components (Activity), and metadata.
-  Beginners: Every permission the app needs must be listed here first.
--->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- RECORD_AUDIO: needed for the microphone / speech recognition -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
-    <!-- CALL_PHONE: needed to actually dial a phone number -->
     <uses-permission android:name="android.permission.CALL_PHONE" />
-
-    <!-- INTERNET: needed to call the Gemini API when online -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- ACCESS_NETWORK_STATE: lets us check if the device is online before making API calls -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
@@ -27,17 +15,20 @@
         android:theme="@style/Theme.AndroidAssistant"
         android:usesCleartextTraffic="false">
 
-        <!-- MainActivity is the only screen in this app -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
-                <!-- This makes it the launcher (home screen) activity -->
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
 
     </application>
 

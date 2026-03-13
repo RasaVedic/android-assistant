@@ -1,219 +1,240 @@
 package com.example.assistant
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.view.MenuItem
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.TextView
 import com.example.assistant.databinding.ActivityMainBinding
+import com.example.assistant.databinding.ItemCommandBinding
+import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
+import java.util.Locale
 
-/**
- * MainActivity.kt
- *
- * PURPOSE: The main (and only) screen of the app.
- *
- * This class ties all the other pieces together:
- *   - Shows the text input and mic button (from activity_main.xml)
- *   - Asks for microphone permission when needed
- *   - Calls VoiceInputHandler when the mic button is tapped
- *   - Calls CommandParser (offline) or GeminiHelper (online) to understand the command
- *   - Calls ActionHandler to execute the command
- *   - Displays the result to the user
- *
- * Beginners:
- *   - ViewBinding lets us access layout views like `binding.btnMic` instead of `findViewById(R.id.btnMic)`
- *   - lifecycleScope.launch { } runs code in a coroutine (background thread) so the UI stays responsive
- *   - The permission launcher handles the runtime permission dialog (Android 6.0+)
- */
+data class CommandItem(val command: String, val result: String, val isOnline: Boolean)
+
+class CommandAdapter(private val items: MutableList<CommandItem>) :
+    RecyclerView.Adapter<CommandAdapter.ViewHolder>() {
+
+    class ViewHolder(val binding: ItemCommandBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        ViewHolder(ItemCommandBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun getItemCount() = items.size
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = items[position]
+        holder.binding.tvCommandText.text = "\"${item.command}\""
+        holder.binding.tvResult.text = item.result
+        holder.binding.chipMode.text = if (item.isOnline) "Gemini" else "Offline"
+        holder.binding.chipMode.setChipBackgroundColorResource(
+            if (item.isOnline) R.color.teal_200 else R.color.purple_200
+        )
+    }
+}
+
 class MainActivity : AppCompatActivity() {
 
-    // ViewBinding: auto-generated class that connects to activity_main.xml
     private lateinit var binding: ActivityMainBinding
-
-    // Our modular helpers
-    private lateinit var voiceInputHandler: VoiceInputHandler
-    private val geminiHelper = GeminiHelper()
-
-    // -----------------------------------------------------------------------
-    // Permission launcher for RECORD_AUDIO
-    // When the user responds to the permission dialog, this callback runs.
-    // -----------------------------------------------------------------------
-    private val micPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            startVoiceInput()
-        } else {
-            showResult("⚠️ Microphone permission denied.\nYou can still type commands below.")
-        }
-    }
+    private lateinit var geminiHelper: GeminiHelper
+    private val commandHistory = mutableListOf<CommandItem>()
+    private lateinit var adapter: CommandAdapter
 
     // -----------------------------------------------------------------------
     // Permission launcher for CALL_PHONE
     // -----------------------------------------------------------------------
     private val callPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) {
-            showResult("⚠️ Phone permission denied. Cannot make calls.")
+    ) { /* handled in ActionHandler fallback */ }
+
+    // -----------------------------------------------------------------------
+    // Voice recognition — activity-based (most reliable, works on all phones)
+    // -----------------------------------------------------------------------
+    private val voiceLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val matches = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val text = matches?.firstOrNull()?.trim() ?: ""
+            if (text.isNotBlank()) {
+                binding.etCommand.setText(text)
+                handleCommand(text)
+            }
         }
     }
 
     // -----------------------------------------------------------------------
-    // onCreate: called when the Activity is first created
+    // onCreate
     // -----------------------------------------------------------------------
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Inflate the layout and set it as the content view
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Set up the toolbar
         setSupportActionBar(binding.toolbar)
 
-        // Set up voice input handler with callbacks
-        voiceInputHandler = VoiceInputHandler(
-            activity = this,
-            onResult  = { recognizedText -> handleCommand(recognizedText) },
-            onError   = { error -> showResult("Voice error: $error") },
-            onListening = { showResult("🎤 Listening…") }
-        )
+        geminiHelper = GeminiHelper(this)
 
-        // Update the online/offline chip
+        // RecyclerView setup
+        adapter = CommandAdapter(commandHistory)
+        binding.rvHistory.layoutManager = LinearLayoutManager(this).apply {
+            stackFromEnd = true
+        }
+        binding.rvHistory.adapter = adapter
+
         updateStatusChip()
+        updateEmptyState()
 
-        // Request CALL_PHONE permission upfront so it's ready when needed
-        if (!hasCallPermission()) {
+        // Request CALL_PHONE permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+            != PackageManager.PERMISSION_GRANTED) {
             callPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
         }
 
-        setupClickListeners()
+        setupListeners()
     }
 
     // -----------------------------------------------------------------------
-    // Wire up button click listeners
+    // Toolbar menu
     // -----------------------------------------------------------------------
-    private fun setupClickListeners() {
-
-        // Mic button: check permission then start voice input
-        binding.btnMic.setOnClickListener {
-            when {
-                !voiceInputHandler.isAvailable() -> {
-                    showResult("Speech recognition is not available on this device.\nUse the text input instead.")
-                }
-                hasMicPermission() -> startVoiceInput()
-                else -> micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
             }
+            R.id.action_clear -> {
+                commandHistory.clear()
+                adapter.notifyDataSetChanged()
+                updateEmptyState()
+                updateCommandCount()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
+    }
 
-        // Send button: read the text field and process it
-        binding.btnSend.setOnClickListener {
-            submitTextCommand()
-        }
+    // -----------------------------------------------------------------------
+    // Button listeners
+    // -----------------------------------------------------------------------
+    private fun setupListeners() {
+        binding.btnMic.setOnClickListener { startVoiceInput() }
 
-        // "Send" action on the keyboard (the enter key with imeOptions="actionSend")
+        binding.btnSend.setOnClickListener { submitTextCommand() }
+
         binding.etCommand.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND) {
-                submitTextCommand()
-                true
+                submitTextCommand(); true
             } else false
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Submit the text typed in the input field
-    // -----------------------------------------------------------------------
     private fun submitTextCommand() {
         val text = binding.etCommand.text?.toString()?.trim() ?: ""
         if (text.isBlank()) return
-
         binding.etCommand.setText("")
         hideKeyboard()
         handleCommand(text)
     }
 
     // -----------------------------------------------------------------------
-    // Main command processing pipeline
-    // 1. Check if online → use Gemini
-    // 2. If offline (or Gemini fails) → use local CommandParser
-    // 3. Execute the parsed command via ActionHandler
+    // Voice input — uses system dialog (reliable on all Android phones)
+    // -----------------------------------------------------------------------
+    private fun startVoiceInput() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a command…")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+        try {
+            voiceLauncher.launch(intent)
+        } catch (e: Exception) {
+            addToHistory("Voice", "Speech recognition not available on this device. Use text input.", false)
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Main pipeline: offline → Gemini (if key set + online)
     // -----------------------------------------------------------------------
     private fun handleCommand(input: String) {
-        showResult("You said: \"$input\"\n\nProcessing…")
         updateStatusChip()
-
-        // lifecycleScope.launch runs on the main thread but lets us call suspend functions
         lifecycleScope.launch {
+            val online = isOnline()
             val command: ParsedCommand
 
-            if (isOnline()) {
-                // --- Online path: try Gemini first ---
+            if (online && geminiHelper.hasApiKey()) {
                 val geminiResponse = geminiHelper.interpretCommand(input)
-
                 command = if (geminiResponse != null) {
                     geminiHelper.parseGeminiResponse(geminiResponse)
                 } else {
-                    // Gemini failed (timeout, bad key, etc.) → fall back to local parser
                     CommandParser.parse(input)
                 }
             } else {
-                // --- Offline path: use local command parser ---
                 command = CommandParser.parse(input)
             }
 
-            // Execute the command and get a result message
             val resultMessage = ActionHandler.execute(this@MainActivity, command)
-
-            // Build a nice display string
-            val modeLabel = if (isOnline()) "🌐 Online (Gemini)" else "📵 Offline"
-            val display = "Command: \"$input\"\nMode: $modeLabel\n\n$resultMessage"
-            showResult(display)
+            val usedOnline = online && geminiHelper.hasApiKey()
+            addToHistory(input, resultMessage, usedOnline)
         }
     }
 
     // -----------------------------------------------------------------------
-    // Start voice recognition
+    // Add item to history list
     // -----------------------------------------------------------------------
-    private fun startVoiceInput() {
-        voiceInputHandler.startListening()
+    private fun addToHistory(command: String, result: String, isOnline: Boolean) {
+        commandHistory.add(CommandItem(command, result, isOnline))
+        adapter.notifyItemInserted(commandHistory.size - 1)
+        binding.rvHistory.scrollToPosition(commandHistory.size - 1)
+        updateEmptyState()
+        updateCommandCount()
     }
 
     // -----------------------------------------------------------------------
-    // Update the Online/Offline chip in the toolbar area
+    // UI helpers
     // -----------------------------------------------------------------------
+    private fun updateEmptyState() {
+        val isEmpty = commandHistory.isEmpty()
+        binding.layoutEmpty.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.rvHistory.visibility = if (isEmpty) View.GONE else View.VISIBLE
+    }
+
+    private fun updateCommandCount() {
+        binding.tvCommandCount.text = "${commandHistory.size} command${if (commandHistory.size != 1) "s" else ""}"
+    }
+
     private fun updateStatusChip() {
-        if (isOnline()) {
-            binding.chipStatus.text = "Online – Gemini"
-            binding.chipStatus.setChipBackgroundColorResource(R.color.teal_700)
-        } else {
-            binding.chipStatus.text = "Offline"
-            binding.chipStatus.setChipBackgroundColorResource(R.color.purple_200)
+        val online = isOnline()
+        val hasKey = geminiHelper.hasApiKey()
+        binding.chipStatus.text = when {
+            online && hasKey -> "Online · Gemini"
+            online           -> "Online · No API key"
+            else             -> "Offline"
         }
+        binding.chipStatus.setChipBackgroundColorResource(
+            if (online && hasKey) R.color.teal_700 else R.color.purple_200
+        )
     }
 
-    // -----------------------------------------------------------------------
-    // Display a message in the result TextView and auto-scroll to the bottom
-    // -----------------------------------------------------------------------
-    private fun showResult(text: String) {
-        binding.tvResult.text = text
-        // Scroll to bottom so the latest message is always visible
-        binding.scrollResult.post {
-            binding.scrollResult.fullScroll(android.view.View.FOCUS_DOWN)
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // Check if the device has an active internet connection
-    // -----------------------------------------------------------------------
     private fun isOnline(): Boolean {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
@@ -222,30 +243,13 @@ class MainActivity : AppCompatActivity() {
                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    // -----------------------------------------------------------------------
-    // Permission helpers
-    // -----------------------------------------------------------------------
-    private fun hasMicPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
-            PackageManager.PERMISSION_GRANTED
-
-    private fun hasCallPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) ==
-            PackageManager.PERMISSION_GRANTED
-
-    // -----------------------------------------------------------------------
-    // Hide the soft keyboard
-    // -----------------------------------------------------------------------
     private fun hideKeyboard() {
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(binding.root.windowToken, 0)
     }
 
-    // -----------------------------------------------------------------------
-    // Lifecycle: stop the voice recognizer when the Activity is paused
-    // -----------------------------------------------------------------------
-    override fun onPause() {
-        super.onPause()
-        voiceInputHandler.stopListening()
+    override fun onResume() {
+        super.onResume()
+        updateStatusChip() // Refresh after returning from Settings
     }
 }

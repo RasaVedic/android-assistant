@@ -2,31 +2,17 @@ package com.example.assistant
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.AlarmClock
+import android.provider.MediaStore
 
 /**
  * ActionHandler.kt
- *
- * PURPOSE: Execute the action that CommandParser identified.
- *
- * HOW IT WORKS:
- * Android uses "Intents" to ask other apps to do things.
- * For example, to open the camera we create an Intent with the camera app's
- * package name and call startActivity(). Android routes it to the right app.
- *
- * Beginners: Think of an Intent as a message you send to Android saying
- * "please open this app" or "please dial this number".
+ * Executes the parsed command using Android Intents.
  */
 object ActionHandler {
 
-    /**
-     * Execute a parsed command and return a human-readable result message.
-     *
-     * @param context  Android context (needed to start activities / send intents)
-     * @param command  The parsed command from CommandParser
-     * @return         A string describing what happened (shown to the user)
-     */
     fun execute(context: Context, command: ParsedCommand): String {
         return when (command) {
             is ParsedCommand.OpenApp  -> openApp(context, command.appName)
@@ -38,171 +24,188 @@ object ActionHandler {
     }
 
     // -----------------------------------------------------------------------
-    // Open an installed app by name
+    // Open an app — tries multiple strategies
     // -----------------------------------------------------------------------
     private fun openApp(context: Context, appName: String): String {
-        if (appName.isBlank()) return "Please specify an app name. Example: 'open camera'"
+        if (appName.isBlank()) return "Please say which app to open. Example: 'open camera'"
 
-        val pm = context.packageManager
+        val name = appName.trim().lowercase()
 
-        // Map of friendly names → package names for common apps
-        val knownApps = mapOf(
-            "camera"    to "com.android.camera2",
-            "chrome"    to "com.android.chrome",
-            "maps"      to "com.google.android.apps.maps",
-            "youtube"   to "com.google.android.youtube",
-            "gmail"     to "com.google.android.gm",
-            "settings"  to "com.android.settings",
-            "calculator" to "com.android.calculator2",
-            "calendar"  to "com.google.android.calendar",
-            "photos"    to "com.google.android.apps.photos",
-            "spotify"   to "com.spotify.music",
-            "whatsapp"  to "com.whatsapp",
-            "instagram" to "com.instagram.android",
-            "twitter"   to "com.twitter.android",
-            "facebook"  to "com.facebook.katana",
-            "clock"     to "com.google.android.deskclock",
-            "contacts"  to "com.android.contacts",
-            "messages"  to "com.google.android.apps.messaging",
-            "phone"     to "com.android.dialer",
-            "files"     to "com.google.android.documentsui",
-            "browser"   to "com.android.browser"
-        )
+        // Strategy 1: Special intents for common apps (most reliable)
+        val specialIntent: Intent? = when {
+            name.contains("camera") -> Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+            name.contains("video") && name.contains("camera") -> Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+            name.contains("gallery") || name.contains("photos") ->
+                Intent(Intent.ACTION_VIEW).apply { type = "image/*" }
+            name.contains("dial") || name.contains("phone") || name.contains("dialer") ->
+                Intent(Intent.ACTION_DIAL)
+            name.contains("contact") ->
+                Intent(Intent.ACTION_VIEW, Uri.parse("content://contacts/people/"))
+            name.contains("message") || name.contains("sms") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_MESSAGING) }
+            name.contains("browser") || name.contains("chrome") || name.contains("internet") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_BROWSER) }
+            name.contains("email") || name.contains("gmail") || name.contains("mail") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_EMAIL) }
+            name.contains("maps") || name.contains("map") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_MAPS) }
+            name.contains("music") || name.contains("player") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_MUSIC) }
+            name.contains("calculator") || name.contains("calc") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_CALCULATOR) }
+            name.contains("calendar") ->
+                Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_CALENDAR) }
+            name.contains("clock") || name.contains("alarm") ->
+                Intent(AlarmClock.ACTION_SHOW_ALARMS)
+            name.contains("settings") || name.contains("setting") ->
+                Intent(android.provider.Settings.ACTION_SETTINGS)
+            name.contains("wifi") || name.contains("wi-fi") ->
+                Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+            name.contains("bluetooth") ->
+                Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+            name.contains("youtube") ->
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://m.youtube.com"))
+            name.contains("whatsapp") ->
+                context.packageManager.getLaunchIntentForPackage("com.whatsapp")
+            name.contains("instagram") ->
+                context.packageManager.getLaunchIntentForPackage("com.instagram.android")
+            name.contains("spotify") ->
+                context.packageManager.getLaunchIntentForPackage("com.spotify.music")
+            name.contains("netflix") ->
+                context.packageManager.getLaunchIntentForPackage("com.netflix.mediaclient")
+            name.contains("twitter") || name.contains("x app") ->
+                context.packageManager.getLaunchIntentForPackage("com.twitter.android")
+            name.contains("facebook") ->
+                context.packageManager.getLaunchIntentForPackage("com.facebook.katana")
+            name.contains("telegram") ->
+                context.packageManager.getLaunchIntentForPackage("org.telegram.messenger")
+            name.contains("zoom") ->
+                context.packageManager.getLaunchIntentForPackage("us.zoom.videomeetings")
+            name.contains("play store") || name.contains("playstore") ->
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store"))
+            else -> null
+        }
 
-        // Find exact or partial match in our known apps map
-        val packageName = knownApps.entries
-            .firstOrNull { (key, _) -> appName.contains(key, ignoreCase = true) }
-            ?.value
-
-        if (packageName != null) {
-            // Try to launch by known package name
-            val launchIntent = pm.getLaunchIntentForPackage(packageName)
-            if (launchIntent != null) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(launchIntent)
-                return "Opening $appName…"
+        if (specialIntent != null) {
+            specialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            return try {
+                context.startActivity(specialIntent)
+                "Opening $appName…"
+            } catch (e: Exception) {
+                // Strategy 2: Search all installed apps
+                tryLaunchByName(context, name)
             }
         }
 
-        // Fallback: search all installed apps for a name match
-        val allApps = pm.getInstalledApplications(0)
-        val match = allApps.firstOrNull { appInfo ->
-            pm.getApplicationLabel(appInfo).toString()
-                .contains(appName, ignoreCase = true)
-        }
+        // Strategy 2: Search installed apps by label name
+        return tryLaunchByName(context, name)
+    }
 
+    private fun tryLaunchByName(context: Context, name: String): String {
+        val pm = context.packageManager
+        val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        val match = apps.firstOrNull { info ->
+            pm.getApplicationLabel(info).toString().lowercase().contains(name)
+        }
         if (match != null) {
             val launchIntent = pm.getLaunchIntentForPackage(match.packageName)
             if (launchIntent != null) {
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(launchIntent)
-                return "Opening ${pm.getApplicationLabel(match)}…"
+                return try {
+                    context.startActivity(launchIntent)
+                    "Opening ${pm.getApplicationLabel(match)}…"
+                } catch (e: Exception) {
+                    "Could not open ${pm.getApplicationLabel(match)}"
+                }
             }
         }
-
-        return "App '$appName' not found. Is it installed?"
+        return "App '$name' not found. Check spelling or install it first."
     }
 
     // -----------------------------------------------------------------------
-    // Make a phone call
+    // Make a call
     // -----------------------------------------------------------------------
     private fun makeCall(context: Context, contact: String): String {
-        if (contact.isBlank()) return "Please say a name or number. Example: 'call 555-1234'"
-
-        // If the contact looks like a phone number (digits, +, -, spaces), dial directly
-        val isPhoneNumber = contact.replace(Regex("[+\\-\\s()]"), "").all { it.isDigit() }
-
-        val intent = if (isPhoneNumber) {
-            Intent(Intent.ACTION_CALL, Uri.parse("tel:${contact.replace(" ", "")}"))
-        } else {
-            // Search the contacts app for the name
-            Intent(Intent.ACTION_CALL).apply {
-                data = Uri.parse("tel:${contact}")
-            }
+        if (contact.isBlank()) return "Please say a name or number. Example: 'call 98XXXXXXXX'"
+        val digits = contact.replace(Regex("[+\\-\\s().]"), "")
+        val isNumber = digits.all { it.isDigit() } && digits.isNotEmpty()
+        val uri = if (isNumber) Uri.parse("tel:$digits") else Uri.parse("tel:$contact")
+        val intent = Intent(Intent.ACTION_CALL, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
         return try {
             context.startActivity(intent)
             "Calling $contact…"
         } catch (e: SecurityException) {
-            "CALL_PHONE permission not granted. Please allow it in Settings."
+            "Phone permission denied. Go to Settings → Apps → Assistant → Permissions → Phone → Allow"
+        } catch (e: Exception) {
+            // Fall back to dial screen (no CALL_PHONE permission needed)
+            val dialIntent = Intent(Intent.ACTION_DIAL, uri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(dialIntent)
+            "Opening dial pad for $contact…"
         }
     }
 
     // -----------------------------------------------------------------------
-    // Set an alarm using Android's built-in AlarmClock API
+    // Set alarm
     // -----------------------------------------------------------------------
     private fun setAlarm(context: Context, timeText: String): String {
-        if (timeText.isBlank()) return "Please specify a time. Example: 'set alarm 7am'"
-
-        // Parse hour and minute from the time string
-        val (hour, minute, message) = parseTime(timeText)
-
-        if (hour == null) {
-            return "Couldn't understand the time '$timeText'. Try: 'alarm 7am' or 'alarm 6:30pm'"
-        }
-
+        if (timeText.isBlank()) return "Please say a time. Example: 'set alarm 7am'"
+        val (hour, minute, display) = parseTime(timeText)
+        if (hour == null) return "Couldn't understand '$timeText'. Try: 'alarm 7am' or 'alarm 6:30pm'"
         val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
             putExtra(AlarmClock.EXTRA_HOUR, hour)
             putExtra(AlarmClock.EXTRA_MINUTES, minute)
-            putExtra(AlarmClock.EXTRA_MESSAGE, "Assistant reminder")
-            putExtra(AlarmClock.EXTRA_SKIP_UI, false)  // false = show the alarm app so user confirms
+            putExtra(AlarmClock.EXTRA_MESSAGE, "Assistant alarm")
+            putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-
-        context.startActivity(intent)
-        return "Setting alarm for $message…"
+        return try {
+            context.startActivity(intent)
+            "Alarm set for $display ✓"
+        } catch (e: Exception) {
+            "No alarm app found on this device."
+        }
     }
 
-    /**
-     * Parse a time string like "7am", "6:30pm", "08:00" into (hour24, minute, displayText).
-     * Returns (null, 0, "") if the string can't be parsed.
-     */
     private fun parseTime(text: String): Triple<Int?, Int, String> {
-        // Match patterns like: 7am, 7 am, 7:30am, 07:30, 7:30 pm
         val regex = Regex("""(\d{1,2})(?::(\d{2}))?\s*(am|pm)?""", RegexOption.IGNORE_CASE)
         val match = regex.find(text) ?: return Triple(null, 0, "")
-
         var hour = match.groupValues[1].toIntOrNull() ?: return Triple(null, 0, "")
         val minute = match.groupValues[2].toIntOrNull() ?: 0
         val ampm = match.groupValues[3].lowercase()
-
-        // Convert to 24-hour
         if (ampm == "pm" && hour != 12) hour += 12
         if (ampm == "am" && hour == 12) hour = 0
-
         val displayMinute = minute.toString().padStart(2, '0')
-        val displayAmPm = if (ampm.isNotEmpty()) " $ampm" else ""
-        val display = "${match.groupValues[1]}:$displayMinute$displayAmPm"
-
+        val display = "${match.groupValues[1]}:$displayMinute${if (ampm.isNotEmpty()) " $ampm" else ""}"
         return Triple(hour, minute, display)
     }
 
     // -----------------------------------------------------------------------
-    // Search using the device's default browser or Google app
+    // Web search
     // -----------------------------------------------------------------------
     private fun search(context: Context, query: String): String {
-        if (query.isBlank()) return "Please specify what to search. Example: 'search weather'"
-
-        val searchUri = Uri.parse("https://www.google.com/search?q=${Uri.encode(query)}")
-        val intent = Intent(Intent.ACTION_VIEW, searchUri).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (query.isBlank()) return "Please say what to search. Example: 'search weather today'"
+        val uri = Uri.parse("https://www.google.com/search?q=${Uri.encode(query)}")
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+        return try {
+            context.startActivity(intent)
+            "Searching for \"$query\"…"
+        } catch (e: Exception) {
+            "No browser found to perform search."
         }
-
-        context.startActivity(intent)
-        return "Searching for '$query'…"
     }
 
     // -----------------------------------------------------------------------
-    // Handle unknown commands (with optional auto-correct suggestion)
+    // Unknown command
     // -----------------------------------------------------------------------
     private fun handleUnknown(command: ParsedCommand.Unknown): String {
         return if (command.suggestion != null) {
-            "I didn't understand '${command.original}'.\n\nDid you mean: '${command.suggestion}'?\n\nTry again with that command!"
+            "Did you mean: \"${command.suggestion}\"?\n\nTry again with that command."
         } else {
-            "I didn't understand '${command.original}'.\n\nTry commands like:\n• open camera\n• call John\n• set alarm 7am\n• search recipes"
+            "Command not recognized.\n\nTry:\n• open camera\n• call 98XXXXXXXX\n• set alarm 7am\n• search recipes"
         }
     }
 }
