@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
@@ -21,49 +22,63 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        val tabAuth = findViewById<TabLayout>(R.id.tabAuth)
-        val etEmail = findViewById<TextInputEditText>(R.id.etEmail)
-        val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val etConfirmPassword = findViewById<TextInputEditText>(R.id.etConfirmPassword)
+        val tabAuth            = findViewById<TabLayout>(R.id.tabAuth)
+        val etEmail            = findViewById<TextInputEditText>(R.id.etEmail)
+        val etPassword         = findViewById<TextInputEditText>(R.id.etPassword)
+        val etConfirmPassword  = findViewById<TextInputEditText>(R.id.etConfirmPassword)
         val tilConfirmPassword = findViewById<TextInputLayout>(R.id.tilConfirmPassword)
-        val btnEmailAuth = findViewById<Button>(R.id.btnEmailAuth)
-        val btnGoogle = findViewById<Button>(R.id.btnGoogle)
-        val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
-        val tvSkip = findViewById<TextView>(R.id.tvSkip)
-        val tvError = findViewById<TextView>(R.id.tvError)
+        val btnEmailAuth       = findViewById<Button>(R.id.btnEmailAuth)
+        val btnGoogle          = findViewById<Button>(R.id.btnGoogle)
+        val tvForgotPassword   = findViewById<TextView>(R.id.tvForgotPassword)
+        val tvSkip             = findViewById<TextView>(R.id.tvSkip)
+        val tvError            = findViewById<TextView>(R.id.tvError)
+
+        // ── Show Firebase key notice if no key available ──────────────────────
+        if (!AuthManager.hasFirebaseKey(this)) {
+            showError(tvError,
+                "ℹ️ To use login, set your Firebase Web API Key in:\nSettings → Account → Firebase Key\n\nOr tap 'Skip' to use Aria without an account.")
+            tvError.visibility = View.VISIBLE
+        }
 
         // ── Tab switching ─────────────────────────────────────────────────────
         tabAuth.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 isSignIn = tab.position == 0
-                btnEmailAuth.text = if (isSignIn) "Sign In" else "Create Account"
+                btnEmailAuth.text      = if (isSignIn) "Sign In" else "Create Account"
                 tilConfirmPassword.visibility = if (isSignIn) View.GONE else View.VISIBLE
-                tvForgotPassword.visibility = if (isSignIn) View.VISIBLE else View.GONE
-                tvError.visibility = View.GONE
+                tvForgotPassword.visibility   = if (isSignIn) View.VISIBLE else View.GONE
+                if (AuthManager.hasFirebaseKey(this@LoginActivity))
+                    tvError.visibility = View.GONE
             }
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {}
         })
 
-        // ── Email Auth ────────────────────────────────────────────────────────
+        // ── Email / Password Auth ─────────────────────────────────────────────
         btnEmailAuth.setOnClickListener {
-            val email = etEmail.text?.toString()?.trim() ?: ""
-            val password = etPassword.text?.toString() ?: ""
+            val email       = etEmail.text?.toString()?.trim() ?: ""
+            val password    = etPassword.text?.toString() ?: ""
             val confirmPass = etConfirmPassword.text?.toString() ?: ""
 
-            if (email.isEmpty()) { showError(tvError, "Please enter your email."); return@setOnClickListener }
-            if (password.length < 6) { showError(tvError, "Password must be at least 6 characters."); return@setOnClickListener }
-            if (!isSignIn && password != confirmPass) { showError(tvError, "Passwords do not match."); return@setOnClickListener }
+            if (email.isEmpty())              { showError(tvError, "Please enter your email.");                return@setOnClickListener }
+            if (password.length < 6)          { showError(tvError, "Password must be at least 6 characters."); return@setOnClickListener }
+            if (!isSignIn && password != confirmPass) { showError(tvError, "Passwords do not match.");         return@setOnClickListener }
+
+            if (!AuthManager.hasFirebaseKey(this)) {
+                showError(tvError,
+                    "Firebase API key not set.\n\nGo to Settings → Account → Firebase Key, enter your key, then come back to sign in.")
+                return@setOnClickListener
+            }
 
             setLoading(btnEmailAuth, true)
             tvError.visibility = View.GONE
 
             lifecycleScope.launch {
-                val result = if (isSignIn) {
+                val result = if (isSignIn)
                     AuthManager.signInWithEmail(this@LoginActivity, email, password)
-                } else {
+                else
                     AuthManager.registerWithEmail(this@LoginActivity, email, password)
-                }
+
                 setLoading(btnEmailAuth, false)
 
                 if (result.success) {
@@ -79,13 +94,23 @@ class LoginActivity : AppCompatActivity() {
             startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
 
-        // ── Google Sign-In (needs Firebase config) ────────────────────────────
+        // ── Google Sign-In — requires native Firebase SDK (google-services.json) ──
         btnGoogle.setOnClickListener {
-            Toast.makeText(
-                this,
-                "Google Sign-In: Add Firebase config in Settings → Account first.",
-                Toast.LENGTH_LONG
-            ).show()
+            AlertDialog.Builder(this)
+                .setTitle("Google Sign-In")
+                .setMessage(
+                    "Google Sign-In requires the Firebase Android SDK (google-services.json).\n\n" +
+                    "This feature is not available in the standard APK build.\n\n" +
+                    "You can:\n" +
+                    "• Use Email/Password login instead\n" +
+                    "• Or skip login and use Aria without an account"
+                )
+                .setPositiveButton("Use Email Instead") { _, _ -> }
+                .setNeutralButton("Skip Login") { _, _ ->
+                    AuthManager.skipLogin(this)
+                    goToMain()
+                }
+                .show()
         }
 
         // ── Skip ──────────────────────────────────────────────────────────────

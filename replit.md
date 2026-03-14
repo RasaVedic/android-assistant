@@ -95,15 +95,28 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
 
-## Android Assistant App
+## Android Assistant App (Aria AI)
 
-A standalone native Android app (Kotlin) located at `artifacts/android-assistant/`. This is NOT a pnpm workspace package — it is a self-contained Gradle project meant to be pushed to GitHub and built with Android Studio, Termux, or GitHub Actions.
+A standalone native Android app (Kotlin) located at `artifacts/android-assistant/`. App name: **Aria**. Version: **1.7**. This is NOT a pnpm workspace package — it is a self-contained Gradle project meant to be pushed to GitHub and built with GitHub Actions.
 
 ### Key files
-- `MainActivity.kt` — main screen, wires all modules together
-- `CommandParser.kt` — offline command understanding with Levenshtein auto-correct
-- `VoiceInputHandler.kt` — microphone / Android SpeechRecognizer integration
-- `ActionHandler.kt` — executes open app / call / alarm / search via Android Intents
-- `GeminiHelper.kt` — optional Gemini Flash API for online command interpretation
-- `.github/workflows/build-apk.yml` — GitHub Actions CI that builds the debug APK automatically
-- `GUIDE.md` — full beginner's guide: build instructions, testing, customization
+- `MainActivity.kt` — main screen, voice + text input, command pipeline
+- `CommandParser.kt` — offline command understanding with Levenshtein auto-correct + Hindi phrasing
+- `VoiceInputHandler.kt` — microphone / SpeechRecognizer integration
+- `ActionHandler.kt` — executes open app / call / alarm / selfie / search / navigation via Intents
+- `GeminiHelper.kt` — Gemini Flash API for online command interpretation (supports SELFIE command)
+- `AssistantBackgroundService.kt` — foreground service: keeps Aria alive, continuous background voice listening, hourly update checks
+- `UpdateChecker.kt` — version check from GitHub, shows dialog + system notification when new version available
+- `AuthManager.kt` — Firebase REST Auth (email/password), reads key from SharedPrefs OR BuildConfig fallback
+- `SettingsActivity.kt` — full settings: permissions, bg service, bg voice listening (new), accessibility, account, about, Gemini (at bottom)
+- `.github/workflows/build-apk.yml` — builds debug APK on push to main; creates GitHub Release when version tag (v1.7) is pushed
+- `version.json` — version metadata fetched by UpdateChecker
+
+### Features (v1.7)
+- Voice commands work even after opening another app (background listening toggle in Settings)
+- "take selfie" / "click selfie" command opens front camera
+- Alarm commands improved with multi-ROM fallback strategy
+- Auto notification when new Aria version is available (no need to open app)
+- 25+ apps supported including Indian apps (Paytm, GPay, PhonePe, Swiggy, Zomato)
+- Play Store fallback when app not found
+- All "PKassist" branding updated to "Aria"

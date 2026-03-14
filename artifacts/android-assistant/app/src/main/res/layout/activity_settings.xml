@@ -23,46 +23,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- ══ Version / Update ══════════════════════════════════════ -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="🔄  Updates"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
-
-                    <TextView
-                        android:id="@+id/tvCurrentVersion"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Current version: …"
-                        android:textSize="13sp"
-                        android:alpha="0.7"
-                        android:layout_marginBottom="10dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCheckUpdate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Check for Update" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- ══ Permissions ══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -70,13 +30,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -84,7 +42,6 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="6dp" />
-
                     <TextView
                         android:id="@+id/tvPermissionStatus"
                         android:layout_width="match_parent"
@@ -92,84 +49,18 @@
                         android:text="Checking…"
                         android:textSize="13sp"
                         android:layout_marginBottom="10dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGrantPermissions"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Grant All Permissions"
                         android:layout_marginBottom="6dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOpenAppSettings"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Open App Settings" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- ══ Gemini AI ═════════════════════════════════════════════ -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="🤖  Gemini AI"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Optional — enables smarter command understanding when online. Free key from Google."
-                        android:textSize="12sp"
-                        android:alpha="0.65"
-                        android:layout_marginBottom="10dp" />
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Gemini API key"
-                        app:endIconMode="clear_text"
-                        android:layout_marginBottom="8dp">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etApiKey"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textVisiblePassword"
-                            android:fontFamily="monospace" />
-
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSaveKey"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Save API Key"
-                        android:layout_marginBottom="6dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnGetKey"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Get Free Key from Google AI Studio" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -180,13 +71,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -194,36 +83,76 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="4dp" />
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Keeps PKassist alive when you close the app. Notification will appear."
+                        android:text="Keeps Aria alive when you close the app. A notification will appear."
                         android:textSize="12sp"
                         android:alpha="0.65"
                         android:layout_marginBottom="12dp" />
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
-
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Run in background"
                             android:textSize="14sp" />
-
                         <com.google.android.material.switchmaterial.SwitchMaterial
                             android:id="@+id/switchBackground"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:checked="true" />
-
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
+            <!-- ══ Background Voice Listening ═══════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🎙  Background Voice Listening"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Like Google Assistant — Aria keeps listening even after opening an app. Voice input continues in the background after every command."
+                        android:textSize="12sp"
+                        android:alpha="0.65"
+                        android:layout_marginBottom="12dp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Keep listening in background"
+                            android:textSize="14sp" />
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchBgVoice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -234,13 +163,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -248,15 +175,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="4dp" />
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Lets PKassist go back, go home, take screenshot, lock screen, and more — via voice."
+                        android:text="Lets Aria go back, go home, take screenshot, lock screen, and more — via voice."
                         android:textSize="12sp"
                         android:alpha="0.65"
                         android:layout_marginBottom="8dp" />
-
                     <TextView
                         android:id="@+id/tvAccessibilityStatus"
                         android:layout_width="match_parent"
@@ -264,13 +189,11 @@
                         android:text="Checking…"
                         android:textSize="13sp"
                         android:layout_marginBottom="10dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnAccessibility"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Enable Accessibility Permission" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -281,13 +204,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -295,15 +216,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="4dp" />
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Allows PKassist to show a floating button on top of any app."
+                        android:text="Allows Aria to show a floating button on top of any app."
                         android:textSize="12sp"
                         android:alpha="0.65"
                         android:layout_marginBottom="8dp" />
-
                     <TextView
                         android:id="@+id/tvOverlayStatus"
                         android:layout_width="match_parent"
@@ -311,13 +230,11 @@
                         android:text="Checking…"
                         android:textSize="13sp"
                         android:layout_marginBottom="10dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnOverlay"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Allow Draw Over Apps" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -328,14 +245,12 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:id="@+id/layoutAccount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -351,14 +266,12 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:visibility="gone">
-
                         <TextView
                             android:id="@+id/tvUserEmail"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:textSize="13sp"
                             android:layout_marginBottom="12dp" />
-
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSignOut"
                             style="@style/Widget.Material3.Button.OutlinedButton"
@@ -374,7 +287,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:visibility="visible">
-
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -382,14 +294,11 @@
                             android:textSize="12sp"
                             android:alpha="0.65"
                             android:layout_marginBottom="10dp" />
-
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSignIn"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Sign In / Register" />
-
-                        <!-- Firebase API Key for Auth -->
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -398,7 +307,6 @@
                             android:alpha="0.55"
                             android:layout_marginTop="16dp"
                             android:layout_marginBottom="4dp" />
-
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -412,7 +320,6 @@
                                 android:fontFamily="monospace"
                                 android:textSize="12sp" />
                         </com.google.android.material.textfield.TextInputLayout>
-
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSaveFirebaseKey"
                             style="@style/Widget.Material3.Button.OutlinedButton"
@@ -421,7 +328,6 @@
                             android:layout_marginTop="8dp"
                             android:text="Save Firebase Key" />
                     </LinearLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -432,13 +338,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -446,15 +350,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="10dp" />
-
                     <TextView
                         android:id="@+id/tvAboutVersion"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Version 1.6"
+                        android:text="Version …"
                         android:textSize="13sp"
                         android:layout_marginBottom="4dp" />
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -462,7 +364,6 @@
                         android:textSize="13sp"
                         android:alpha="0.7"
                         android:layout_marginBottom="12dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGitHub"
                         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -470,14 +371,12 @@
                         android:layout_height="wrap_content"
                         android:text="View on GitHub"
                         android:layout_marginBottom="6dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnWebsite"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Website / Docs" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -488,13 +387,11 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -502,14 +399,13 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="10dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendFeedback"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Send Feedback"
                         android:layout_marginBottom="6dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnReportBug"
                         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -517,39 +413,34 @@
                         android:layout_height="wrap_content"
                         android:text="Report a Bug"
                         android:layout_marginBottom="6dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnContactUs"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Contact Us" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ══ Legal ══════════════════════════════════════════════ -->
+            <!-- ══ Legal ══════════════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="2dp">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
-
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="📄  Legal"
+                        android:text="⚖️  Legal"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="10dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPrivacyPolicy"
                         style="@style/Widget.Material3.Button.OutlinedButton"
@@ -557,28 +448,105 @@
                         android:layout_height="wrap_content"
                         android:text="Privacy Policy"
                         android:layout_marginBottom="6dp" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnTerms"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Terms of Service" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
+            <!-- ══ Updates ═══════════════════════════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="© 2025 RasaVedic. All rights reserved.\nAria AI Assistant is open source."
-                        android:textSize="11sp"
-                        android:alpha="0.5"
-                        android:gravity="center" />
+                        android:text="🔄  Updates"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+                    <TextView
+                        android:id="@+id/tvCurrentVersion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Current version: …"
+                        android:textSize="13sp"
+                        android:alpha="0.7"
+                        android:layout_marginBottom="10dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCheckUpdate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Check for Update" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
+            <!-- ══ Gemini AI (optional, advanced) ═══════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🤖  Gemini AI (Optional)"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="4dp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Add your own Gemini API key for smarter command understanding. Free key available from Google AI Studio. Leave blank to use the default key."
+                        android:textSize="12sp"
+                        android:alpha="0.65"
+                        android:layout_marginBottom="10dp" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Gemini API key (optional)"
+                        app:endIconMode="clear_text"
+                        android:layout_marginBottom="8dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etApiKey"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textVisiblePassword"
+                            android:fontFamily="monospace" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Save Custom API Key"
+                        android:layout_marginBottom="6dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGetKey"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Get Free Key from Google AI Studio" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
-
     </ScrollView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

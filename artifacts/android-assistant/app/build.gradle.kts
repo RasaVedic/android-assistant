@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.assistant"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "1.8"
 
         // Expose version info to Kotlin code
         buildConfigField("String", "VERSION_CHECK_URL",

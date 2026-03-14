@@ -7,7 +7,7 @@ import android.view.accessibility.AccessibilityEvent
 
 /**
  * AssistantAccessibilityService.kt
- * Accessibility service for PKassist.
+ * Accessibility service for Aria.
  * Allows the assistant to:
  *  - Read screen content
  *  - Navigate back/home/recents

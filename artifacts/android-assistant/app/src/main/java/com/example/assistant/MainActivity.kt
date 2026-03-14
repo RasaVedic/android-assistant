@@ -10,6 +10,8 @@ import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognizerIntent
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -55,8 +57,8 @@ class CommandAdapter(private val items: MutableList<CommandItem>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.binding.tvCommandText.text = "\"${item.command}\""
-        holder.binding.tvResult.text = item.result
-        holder.binding.tvTimestamp.text = item.time
+        holder.binding.tvResult.text      = item.result
+        holder.binding.tvTimestamp.text   = item.time
 
         if (item.isOnline) {
             holder.binding.chipMode.text = "Gemini"
@@ -83,17 +85,14 @@ class MainActivity : AppCompatActivity() {
     private val commandHistory = mutableListOf<CommandItem>()
     private lateinit var adapter: CommandAdapter
     private var micAnimator: ObjectAnimator? = null
+    private val handler = Handler(Looper.getMainLooper())
 
-    // -----------------------------------------------------------------------
-    // Permission launcher for CALL_PHONE
-    // -----------------------------------------------------------------------
+    // ── Permission launcher for CALL_PHONE ────────────────────────────────────
     private val callPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { /* handled in ActionHandler fallback */ }
 
-    // -----------------------------------------------------------------------
-    // Voice recognition — activity-based (most reliable, works on all phones)
-    // -----------------------------------------------------------------------
+    // ── Voice recognition — system dialog (reliable on all phones) ────────────
     private val voiceLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -104,22 +103,23 @@ class MainActivity : AppCompatActivity() {
             val text = matches?.firstOrNull()?.trim() ?: ""
             if (text.isNotBlank()) {
                 binding.etCommand.setText(text)
-                handleCommand(text)
+                handleCommand(text, autoRestartVoice = true)
+            }
+        } else {
+            // If voice dialog was dismissed (e.g. after opening another app),
+            // restart voice input automatically after a short delay
+            if (isBgVoiceEnabled()) {
+                handler.postDelayed({ startVoiceInput(showDialog = false) }, 2000)
             }
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Inflate toolbar menu
-    // -----------------------------------------------------------------------
+    // ── Toolbar menu ──────────────────────────────────────────────────────────
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
 
-    // -----------------------------------------------------------------------
-    // onCreate
-    // -----------------------------------------------------------------------
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -155,9 +155,6 @@ class MainActivity : AppCompatActivity() {
         setupListeners()
     }
 
-    // -----------------------------------------------------------------------
-    // Toolbar menu
-    // -----------------------------------------------------------------------
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> {
@@ -176,11 +173,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Button listeners
-    // -----------------------------------------------------------------------
     private fun setupListeners() {
-        binding.btnMic.setOnClickListener { startVoiceInput() }
+        binding.btnMic.setOnClickListener { startVoiceInput(showDialog = true) }
 
         binding.btnSend.setOnClickListener { submitTextCommand() }
 
@@ -196,31 +190,33 @@ class MainActivity : AppCompatActivity() {
         if (text.isBlank()) return
         binding.etCommand.setText("")
         hideKeyboard()
-        handleCommand(text)
+        handleCommand(text, autoRestartVoice = false)
     }
 
-    // -----------------------------------------------------------------------
-    // Voice input — uses system dialog (reliable on all Android phones)
-    // -----------------------------------------------------------------------
-    private fun startVoiceInput() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a command…")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-        }
-        try {
-            startListeningState()
-            voiceLauncher.launch(intent)
-        } catch (e: Exception) {
-            stopListeningState()
-            addToHistory("Voice", "Speech recognition not available on this device. Use text input.", false)
+    // ── Voice input ───────────────────────────────────────────────────────────
+    // showDialog = true  → show the system mic dialog (user tapped Mic button)
+    // showDialog = false → use background service SpeechRecognizer (no dialog)
+    private fun startVoiceInput(showDialog: Boolean) {
+        if (showDialog) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a command…")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            }
+            try {
+                startListeningState()
+                voiceLauncher.launch(intent)
+            } catch (e: Exception) {
+                stopListeningState()
+                addToHistory("Voice", "Speech recognition not available. Use text input.", false)
+            }
+        } else {
+            // Silent background recognition — delegate to background service
+            AssistantBackgroundService.startOneShot(this)
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Mic listening state — pulse animation + label
-    // -----------------------------------------------------------------------
     private fun startListeningState() {
         binding.tvListening.visibility = View.VISIBLE
         micAnimator = ObjectAnimator.ofPropertyValuesHolder(
@@ -242,35 +238,44 @@ class MainActivity : AppCompatActivity() {
         binding.btnMic.scaleY = 1f
     }
 
-    // -----------------------------------------------------------------------
-    // Main pipeline: offline → Gemini (if key set + online)
-    // -----------------------------------------------------------------------
-    private fun handleCommand(input: String) {
+    // ── Main pipeline ─────────────────────────────────────────────────────────
+    private fun handleCommand(input: String, autoRestartVoice: Boolean) {
         updateStatusChip()
         lifecycleScope.launch {
             val online = isOnline()
-            val command: ParsedCommand
 
-            if (online && geminiHelper.hasApiKey()) {
+            val command = if (online && geminiHelper.hasApiKey()) {
                 val geminiResponse = geminiHelper.interpretCommand(input)
-                command = if (geminiResponse != null) {
-                    geminiHelper.parseGeminiResponse(geminiResponse)
-                } else {
-                    CommandParser.parse(input)
-                }
+                if (geminiResponse != null) geminiHelper.parseGeminiResponse(geminiResponse)
+                else CommandParser.parse(input)
             } else {
-                command = CommandParser.parse(input)
+                CommandParser.parse(input)
             }
 
             val resultMessage = ActionHandler.execute(this@MainActivity, command)
-            val usedOnline = online && geminiHelper.hasApiKey()
+            val usedOnline    = online && geminiHelper.hasApiKey()
             addToHistory(input, resultMessage, usedOnline)
+
+            // After executing a command that opens another app, restart voice input
+            // in the background so user can give next command without touching the phone
+            val opensAnotherApp = command is ParsedCommand.OpenApp ||
+                                  command is ParsedCommand.TakeSelfie ||
+                                  command is ParsedCommand.MakeCall
+            if (autoRestartVoice && opensAnotherApp && isBgVoiceEnabled()) {
+                // Give the other app 2.5s to launch, then start background listening
+                handler.postDelayed({
+                    AssistantBackgroundService.startOneShot(this@MainActivity)
+                }, 2500)
+            }
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Add item to history list
-    // -----------------------------------------------------------------------
+    private fun isBgVoiceEnabled(): Boolean {
+        return getSharedPreferences("assistant_prefs", Context.MODE_PRIVATE)
+            .getBoolean("bg_voice_listening", false)
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────────
     private fun addToHistory(command: String, result: String, isOnline: Boolean) {
         commandHistory.add(CommandItem(command, result, isOnline))
         adapter.notifyItemInserted(commandHistory.size - 1)
@@ -279,17 +284,15 @@ class MainActivity : AppCompatActivity() {
         updateCommandCount()
     }
 
-    // -----------------------------------------------------------------------
-    // UI helpers
-    // -----------------------------------------------------------------------
     private fun updateEmptyState() {
         val isEmpty = commandHistory.isEmpty()
-        binding.layoutEmpty.visibility = if (isEmpty) View.VISIBLE else View.GONE
-        binding.rvHistory.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        binding.layoutEmpty.visibility  = if (isEmpty) View.VISIBLE else View.GONE
+        binding.rvHistory.visibility    = if (isEmpty) View.GONE    else View.VISIBLE
     }
 
     private fun updateCommandCount() {
-        binding.tvCommandCount.text = "${commandHistory.size} command${if (commandHistory.size != 1) "s" else ""}"
+        binding.tvCommandCount.text =
+            "${commandHistory.size} command${if (commandHistory.size != 1) "s" else ""}"
     }
 
     private fun updateStatusChip() {
@@ -306,9 +309,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isOnline(): Boolean {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val cm      = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(network) ?: return false
+        val caps    = cm.getNetworkCapabilities(network) ?: return false
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
@@ -325,6 +328,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
         micAnimator?.cancel()
     }
 }
