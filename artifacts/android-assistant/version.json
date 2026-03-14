@@ -1,13 +1,6 @@
 {
-<<<<<<< HEAD
-  "versionCode": 6,
-  "versionName": "1.6",
-  "releaseNotes": "Background service, accessibility, auto-update, professional settings, all device permissions",
-  "downloadUrl": "https://github.com/RasaVedic/android-assistant/releases/download/v1.6/PKassist-v1.6.apk"
-=======
   "versionCode": 8,
-  "versionName": "1.8",
-  "releaseNotes": "• App renamed to Aria everywhere\n• Background voice listening — like Google Assistant\n• Auto notification when new version is available\n• Selfie command: 'take selfie' or 'click selfie'\n• Alarm fix: now understands p.m., a.m., raat, dopahar, shaam, subah\n• Fixed: all installed apps now found on Android 11+ (QUERY_ALL_PACKAGES)\n• Firebase login uses build-time key as fallback\n• Settings reordered — Gemini key moved to bottom (optional)\n• More Indian apps: Paytm, GPay, PhonePe, Swiggy, Zomato\n• Play Store fallback when app not found",
-  "downloadUrl": "https://github.com/RasaVedic/android-assistant/releases/latest/download/PKassist-latest.apk"
->>>>>>> c26f90b (Update app name to Aria and improve voice command recognition)
+  "versionName": "2.0.1",
+  "releaseNotes": "Bug fixes and improvements",
+  "downloadUrl": "https://github.com/RasaVedic/android-assistant/releases/download/v2.0.1/PKassist-v2.0.1.apk"
 }
